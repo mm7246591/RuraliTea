@@ -18,6 +18,11 @@ const routes = [
     },
   },
   {
+    path: "/all-tea/:id",
+    name: "AllTeaItem",
+    component: () => import("../components/Item.vue"),
+  },
+  {
     path: "/gift-box",
     name: "GiftBox",
     component: () => import("../views/GiftBox.vue"),
@@ -57,6 +62,7 @@ const routes = [
       name: "聯絡我們",
     },
   },
+
   {
     path: "/:path(.*)*",
     name: "error-page",
