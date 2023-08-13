@@ -123,7 +123,7 @@ onMounted(() => {
                         {{ item.name }}
                     </div>
                     <div class="absolute bottom-[6vh] right-[2vw]">
-                        <img src="@/assets/img/all-item/card-add.png" class="w-[48px] object-contain cursor-pointer"
+                        <img src="/img/all-item/card-add.png" class="w-[48px] object-contain cursor-pointer"
                             @click="handleAddToCar(item.id)">
                         <NModal v-model:show="showModal" :mask-closable="false" v-bind:close-on-esc="false">
                             <NCard style="width: 600px" :bordered="false" size="huge" role="card" aria-modal="true">

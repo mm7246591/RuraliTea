@@ -78,8 +78,7 @@ onMounted(() => {
         class="lg:w-full lg:h-[13vh] flex justify-evenly items-center text-[#5C6E58] shadow-[0_4px_2px_0px_rgba(187,187,187,.25)]">
         <div class="menu lg:w-1/2 flex justify-around items-center text-sm font-semibold">
             <RouterLink :to="{ name: 'Home' }" class="logo">
-                <img class="lg:w-[3.75rem] lg:h-[3.75rem] object-contain cursor-pointer" src="@/assets/img/header/logo.png"
-                    alt="">
+                <img class="lg:w-[3.75rem] lg:h-[3.75rem] object-contain cursor-pointer" src="/img/header/logo.png" alt="">
             </RouterLink>
             <div class=" lg:w-full flex justify-evenly">
                 <RouterLink :to="{ name: 'AllTea' }">所有商品</RouterLink>
@@ -94,15 +93,15 @@ onMounted(() => {
             <div class="relative">
                 <input type="text" id="search" name="search" autocomplete="off" maxlength="10"
                     class="lg:w-[20rem] lg:h-[2rem] border-1 border-[#E0E0E0] rounded-[2.9375rem] shadow-[1px_1px_3px_1px_rgba(0,0,0,.25)] px-[1vw]">
-                <img src="@/assets/img/header/search.png"
+                <img src="/img/header/search.png"
                     class="w-[24px] h-[24px] absolute top-1/2 -translate-y-1/2 right-3 object-contain" alt="">
             </div>
             <NBadge :value="userStore.favoriteSum">
-                <img src="@/assets/img/header/cart.png" class="lg:mx-[1vw] object-contain cursor-pointer" alt="">
+                <img src="/img/header/car.png" class="lg:mx-[1vw] object-contain cursor-pointer" alt="">
             </NBadge>
             <div class="flex justify-center items-center text-lg">
-                <img v-show="!userStore.userName" src="@/assets/img/header/member.png" class="object-contain cursor-pointer"
-                    alt="" @click="handleSignIn">
+                <img v-show="!userStore.userName" src="/img/header/member.png" class="object-contain cursor-pointer" alt=""
+                    @click="handleSignIn">
                 <NDropdown trigger="click" :options="options" @select="handleWebSignOut">
                     <button class="mt-[1vh]">{{
                         userStore.userName
@@ -126,6 +125,6 @@ onMounted(() => {
 }
 
 .router-link-exact-active {
-    background: url('@/assets/img/header/triangle.png') no-repeat top center;
+    background: url('/img/header/triangle.png') no-repeat top center;
 }
 </style>
