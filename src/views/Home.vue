@@ -3,32 +3,49 @@
 const data = [
     {
         id: "1",
-        img: "/img/home/black-tea.jpg",
+        img: "/img/all-item/black-tea-one.jpg",
     },
     {
         id: "2",
-        img: "/img/home/gift-box.jpg",
+        img: "/img/all-item/Lishan.jpg",
     },
     {
         id: "3",
-        img: "/img/home/mountain-tea.jpg",
+        img: "/img/all-item/oolong-tea-one.jpg",
     },
 ]
 
 </script>
 
 <template>
-    <div class="lg:w-[90vw]  flex flex-col items-center mx-auto">
+    <div class="lg:w-[90vw] flex flex-col items-center mx-auto lg:mb-[10vh]">
         <div class="lg:w-full flex justify-center lg:my-[2vh]">
-            <img src="/img/home/bg.jpg" class="object-contain" alt="">
+            <img src="/img/all-item/bg.jpg" class="object-contain">
         </div>
         <div class="lg:w-full flex justify-evenly flex-wrap">
             <div v-for="item of data" :key="item.id" class="lg:w-[24vw] ">
-                <img :src="item.img" class="w-full h-full object-contain">
+                <img :src="item.img" class="img w-full h-full object-contain">
             </div>
         </div>
     </div>
+    <footer class="lg:w-full lg:h-[20vh] bg-[rgba(97,97,97,.6)]">
+        <div class="lg:h-full flex flex-col justify-center items-center text-base text-[#FAFAFA] tracking-[.2em]">
+            <div>丘山茗坊</div>
+            <div class="lg:mt-[1vh]">聯絡資訊</div>
+            <div class="lg:my-[1vh]">E-mail：ruralitea@gmail.com</div>
+            <div>電話：(+886)0900-000-000</div>
+        </div>
+    </footer>
 </template>
 
 
-<style scoped></style>
+<style scoped>
+.img {
+    opacity: 1;
+    transition: .3s;
+}
+
+.img:hover {
+    opacity: .7;
+}
+</style>

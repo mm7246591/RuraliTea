@@ -1,11 +1,9 @@
 <script setup lang="ts">
-
+import GetItem from '@/components/GetItem.vue';
 </script>
 
 <template>
-    <div>
-        123
-    </div>
+    <GetItem />
 </template>
 
 
