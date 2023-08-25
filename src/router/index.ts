@@ -31,12 +31,22 @@ const routes = [
     },
   },
   {
+    path: "/gift-box/:id",
+    name: "GiftBoxItem",
+    component: () => import("../components/Item.vue"),
+  },
+  {
     path: "/season-limited",
     name: "SeasonLimited",
     component: () => import("../views/SeasonLimited.vue"),
     meta: {
       name: "季節限定",
     },
+  },
+  {
+    path: "/season-limited/:id",
+    name: "SeasonLimitedItem",
+    component: () => import("../components/Item.vue"),
   },
   {
     path: "/mountain-tea",
@@ -47,12 +57,22 @@ const routes = [
     },
   },
   {
+    path: "/mountain-tea/:id",
+    name: "MountainTeaItem",
+    component: () => import("../components/Item.vue"),
+  },
+  {
     path: "/black-tea",
     name: "BlackTea",
     component: () => import("../views/BlackTea.vue"),
     meta: {
       name: "紅茶",
     },
+  },
+  {
+    path: "/black-tea/:id",
+    name: "BlackTeaItem",
+    component: () => import("../components/Item.vue"),
   },
   {
     path: "/contact",

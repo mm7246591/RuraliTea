@@ -1,22 +1,32 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { NRadioGroup, NRadioButton } from 'naive-ui';
-import { getDatabase, ref as dref, onValue } from "firebase/database";
+import { NRadioGroup, NRadioButton, NModal, NCard, NIcon, useMessage } from 'naive-ui';
+import { CheckmarkSharp } from '@vicons/ionicons5'
+import { getDatabase, ref as dref, update, onValue } from "firebase/database";
+import { useUserStore } from "@/stores/user";
 
 interface Item {
     id: string
     img: string
     name: string
+    intro: string
+    price: number
     maxSum: number
     pictures: { id: string, img: string }[]
 }
 const db = getDatabase();
+const userStore = useUserStore();
+const message = useMessage()
 const route = useRoute()
 const items = ref<Item[] | null>(null)
 const scaleImg = ref<string>("")
 const selectGroup = ref<string | null>(null)
 const selectPackage = ref<string | null>(null)
+const count = ref<number>(1)
+const maxSum = ref<number>(1)
+const showModal = ref<boolean>(false)
+const isAlreadyHave = ref<boolean>(false)
 const groups = [
     {
         value: "四兩 (150克)",
@@ -61,11 +71,65 @@ const handleToScale = (selectIdImg: string) => {
     scaleImg.value = selectIdImg
 }
 
+const handleMinusCount = () => {
+    count.value > 1 ? count.value -= 1 : count.value
+}
+
+const handlePlusCount = () => {
+    if (count.value < maxSum.value) {
+        count.value += 1
+    }
+}
+
+const handleAddCar = (selectId: string) => {
+    if (localStorage.user && items.value) {
+        showModal.value = true
+        const selectItem = items.value.filter(item => item.id === selectId)[0]
+        const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
+        onValue(favoriteRef, (snapshot) => {
+            snapshot.val().forEach((item, index) => {
+                if (item.id === selectId && selectItem.maxSum - count.value > 0) {
+                    isAlreadyHave.value = true
+                    update(dref(db, `users/${userStore.userName}/favorites/${index}`), {
+                        sum: item.sum += 1
+                    });
+                }
+            })
+        }, {
+            onlyOnce: true
+        });
+        if (!isAlreadyHave.value) {
+            update(dref(db, `users/${userStore.userName}/favorites/${Number(selectId) - 1}`), {
+                id: selectId,
+                name: selectItem.name,
+                sum: 1
+            });
+        }
+        isAlreadyHave.value = false
+        setTimeout(() => {
+            showModal.value = false
+        }, 1500)
+    }
+    else {
+        message.warning("請先登入會員！")
+    }
+}
+
+const handleSubmit = () => {
+    console.log(selectGroup.value, selectPackage.value)
+}
+
 const getItem = () => {
-    const teaRef = dref(db, `/teas`);
+    const teaRef = dref(db, `teas/`);
     onValue(teaRef, (snapshot) => {
         items.value = [...snapshot.val()]
-        scaleImg.value = items.value[0].pictures[0].img
+        items.value.forEach(item => {
+            if (item.id === route.params.id) {
+                scaleImg.value = item.pictures[0].img
+                maxSum.value = item.maxSum
+            }
+        })
+
     });
 }
 
@@ -82,25 +146,53 @@ onMounted(() => {
             </div>
             <div class="lg:w-[510px] flex lg:mx-auto">
                 <div v-for="picture of item.pictures" :key="picture.id" class="lg:mx-[.25vw] lg:my-[1vh]">
-                    <img :src="picture.img" :class="scaleImg === picture.img ? 'opacity-50' : 'opacity-100'"
+                    <img :src="picture.img" :class="scaleImg === picture.img ? 'opacity-50 cursor-default' : 'opacity-100'"
                         class="object-contain cursor-pointer" @click="handleToScale(picture.img)">
                 </div>
             </div>
         </div>
-        <div v-for="item of filterItem" :key="item.id" class="lg:h-full flex flex-col lg:mx-[5vw]">
-            <div class="text-lg text-[#8F2E17]">{{ item.name }}</div>
-            <div></div>
+        <div v-for="item of filterItem" :key="item.id" class="lg:w-[30vw] lg:h-full flex flex-col lg:mx-[2.5vw]">
+            <div class="text-2xl text-[#8F2E17]">{{ item.name }}</div>
+            <div class="lg:py-[2vh] text-base text-[#757575]">{{ item.intro }}</div>
+            <div class="border border-[#8AA899]"></div>
+            <div class="lg:my-[2vh] text-2xl text-[#D0310C] font-bold">NT$ {{ item.price }}</div>
             <div>
-                <div>購買克數</div>
-                <div class="group lg:h-[20vh]">
+                <div class="group lg:h-[20vh] lg:mb-[2vh]">
+                    <div class="text-lg text-[#424242]">購買克數：</div>
                     <NRadioGroup v-model:value="selectGroup" name="groups">
                         <NRadioButton v-for="item of groups" :key="item.value" :value="item.value" :label="item.label" />
                     </NRadioGroup>
                 </div>
                 <div class="package">
-                    <NRadioGroup v-model:value="selectPackage" name="packages">
-                        <NRadioButton v-for="item of packages" :key="item.value" :value="item.value" :label="item.label" />
-                    </NRadioGroup>
+                    <div class="lg:mb-[2vh] text-lg text-[#424242]">包裝方式：</div>
+                    <div class="flex justify-between items-center">
+                        <NRadioGroup v-model:value="selectPackage" name="packages">
+                            <NRadioButton v-for="item of packages" :key="item.value" :value="item.value"
+                                :label="item.label" />
+                        </NRadioGroup>
+                        <div class="flex justify-center items-end">
+                            <img src="/img/all-item/minus.jpg" class="cursor-pointer" @click="handleMinusCount">
+                            <div class="lg:mx-[1vw] lg:my-auto text-lg">{{ count }}</div>
+                            <img src="/img/all-item/plus.jpg" class="cursor-pointer" @click="handlePlusCount">
+                            <div class="lg:mx-[1vw] lg:my-auto text-sm text-[#757575]">剩餘數量{{ maxSum }}</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end lg:mt-[6vh]">
+                        <button class="lg:w-[7.5rem] p-2 rounded-[0.3125rem]  lg:mx-[1vw] text-[#F5F5F5] bg-[#5C6E58]"
+                            @click="handleAddCar(item.id)">加入購物車</button>
+                        <NModal v-model:show="showModal" :mask-closable="false" v-bind:close-on-esc="false">
+                            <NCard style="width: 600px" :bordered="false" size="huge" role="card" aria-modal="true">
+                                商品已加入購物車！
+                                <template #footer>
+                                    <NIcon size="40">
+                                        <CheckmarkSharp />
+                                    </NIcon>
+                                </template>
+                            </NCard>
+                        </NModal>
+                        <button class="lg:w-[6.38rem] p-2 rounded-[0.3125rem] text-[#F5F5F5] bg-[#8F2E17]"
+                            @click="handleSubmit">立即購買</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -110,27 +202,34 @@ onMounted(() => {
 
 
 <style>
+.n-radio-group {
+    --n-font-size: 16px !important;
+    --n-button-border-color: #757575 !important;
+    --n-button-border-color-active: #757575 !important;
+    --n-button-border-radius: 0.3125rem !important;
+    --n-button-box-shadow-focus: #757575 !important;
+    --n-button-text-color-hover: #757575 !important;
+    --n-button-text-color-active: #757575 !important;
+    --n-button-text-color: #757575 !important;
+}
+
 .group .n-radio-group {
     display: flex;
     flex-wrap: wrap;
     width: 300px;
-    --n-button-box-shadow-focus: #757575 !important;
-}
 
-.package .n-radio-group {
-    --n-button-box-shadow-focus: #757575 !important;
 }
 
 .group .n-radio-group .n-radio-button {
     border: 1px solid #757575;
-    margin: 1vh .5vw;
+    margin: 1vh 1vw 1vh 0vw;
     border-radius: 0.32125rem;
     transition: none;
 }
 
 .package .n-radio-group .n-radio-button {
     border: 1px solid #757575;
-    margin: 0 .5vw;
+    margin: 0vh 1vw 0vh 0vw;
     border-radius: 0.32125rem;
     transition: none;
 }
@@ -157,6 +256,24 @@ onMounted(() => {
 }
 
 .n-radio-group .n-radio-button:not(.n-radio-button--disabled):hover:not(.n-radio-button--checked) {
-    color: black;
+    color: #757575;
+}
+
+.n-modal-mask {
+    background-color: rgba(0, 0, 0, .1) !important;
+}
+
+.n-card>.n-card__content {
+    text-align: center !important;
+    font-size: 20px !important
+}
+
+.n-card>.n-card__content,
+.n-card>.n-card__footer {
+    text-align: center !important;
+}
+
+.n-icon {
+    color: green !important;
 }
 </style>

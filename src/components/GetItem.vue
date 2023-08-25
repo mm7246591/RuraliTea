@@ -48,7 +48,7 @@ const handleFilterItem = (value: string) => {
     console.log(value)
 }
 
-const handleAddToCar = async (selectId: string) => {
+const handleAddCar = async (selectId: string) => {
     if (localStorage.user && items.value) {
         showModal.value = true
         const selectItem = items.value.filter(item => item.id === selectId)[0]
@@ -59,9 +59,6 @@ const handleAddToCar = async (selectId: string) => {
                     isAlreadyHave.value = true
                     update(dref(db, `users/${userStore.userName}/favorites/${index}`), {
                         sum: item.sum += 1
-                    });
-                    update(dref(db, `teas/${Number(selectId) - 1}`), {
-                        maxSum: selectItem.maxSum -= 1
                     });
                 }
             })
@@ -86,7 +83,7 @@ const handleAddToCar = async (selectId: string) => {
 }
 
 const handleToItem = (selectId: string) => {
-    router.push({ name: 'AllTeaItem', params: { id: selectId } })
+    router.push({ path: `${route.fullPath}/${selectId}` })
 }
 
 const getItem = () => {
@@ -131,7 +128,7 @@ onMounted(() => {
                     </div>
                     <div class="absolute bottom-[6vh] right-[2vw]">
                         <img src="/img/all-item/card-add.png" class="w-[48px] object-contain cursor-pointer"
-                            @click="handleAddToCar(item.id)">
+                            @click="handleAddCar(item.id)">
                         <NModal v-model:show="showModal" :mask-closable="false" v-bind:close-on-esc="false">
                             <NCard style="width: 600px" :bordered="false" size="huge" role="card" aria-modal="true">
                                 商品已加入購物車！
