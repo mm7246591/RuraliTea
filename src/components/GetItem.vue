@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { NSelect, NModal, NCard, NIcon, useMessage } from 'naive-ui';
-import { Triangle, CheckmarkSharp } from '@vicons/ionicons5'
-import { getDatabase, ref as dref, update, onValue } from "firebase/database";
+import { NSelect, useMessage } from 'naive-ui';
+import { Triangle, } from '@vicons/ionicons5'
+import { getDatabase, ref as dref, onValue } from "firebase/database";
 import { useUserStore } from "@/stores/user";
 import { useRoute, useRouter } from 'vue-router';
 
@@ -22,8 +22,6 @@ const router = useRouter()
 const message = useMessage()
 const items = ref<Item[] | null>(null)
 const selected = ref<string | null>("")
-const showModal = ref<boolean>(false)
-const isAlreadyHave = ref<boolean>(false)
 const options = [
     {
         label: "400~1500/一斤",
@@ -48,34 +46,9 @@ const handleFilterItem = (value: string) => {
     console.log(value)
 }
 
-const handleAddCar = async (selectId: string) => {
+const handleAddCar = () => {
     if (localStorage.user && items.value) {
-        showModal.value = true
-        const selectItem = items.value.filter(item => item.id === selectId)[0]
-        const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
-        onValue(favoriteRef, (snapshot) => {
-            snapshot.val().forEach((item, index) => {
-                if (item.id === selectId && selectItem.maxSum > 0) {
-                    isAlreadyHave.value = true
-                    update(dref(db, `users/${userStore.userName}/favorites/${index}`), {
-                        sum: item.sum += 1
-                    });
-                }
-            })
-        }, {
-            onlyOnce: true
-        });
-        if (!isAlreadyHave.value) {
-            update(dref(db, `users/${userStore.userName}/favorites/${Number(selectId) - 1}`), {
-                id: selectId,
-                name: selectItem.name,
-                sum: 1
-            });
-        }
-        isAlreadyHave.value = false
-        setTimeout(() => {
-            showModal.value = false
-        }, 1500)
+        userStore.showCar = true
     }
     else {
         message.warning("請先登入會員！")
@@ -128,17 +101,7 @@ onMounted(() => {
                     </div>
                     <div class="absolute bottom-[6vh] right-[2vw]">
                         <img src="/img/all-item/card-add.png" class="w-[48px] object-contain cursor-pointer"
-                            @click="handleAddCar(item.id)">
-                        <NModal v-model:show="showModal" :mask-closable="false" v-bind:close-on-esc="false">
-                            <NCard style="width: 600px" :bordered="false" size="huge" role="card" aria-modal="true">
-                                商品已加入購物車！
-                                <template #footer>
-                                    <NIcon size="40">
-                                        <CheckmarkSharp />
-                                    </NIcon>
-                                </template>
-                            </NCard>
-                        </NModal>
+                            @click="handleAddCar">
                     </div>
                 </div>
             </div>
@@ -149,28 +112,6 @@ onMounted(() => {
 
 
 <style>
-.n-base-selection .n-base-suffix {
-    transform: translateY(-50%) rotate(180deg) !important
-}
-
-.n-modal-mask {
-    background-color: rgba(0, 0, 0, .1) !important;
-}
-
-.n-card>.n-card__content {
-    text-align: center !important;
-    font-size: 20px !important
-}
-
-.n-card>.n-card__content,
-.n-card>.n-card__footer {
-    text-align: center !important;
-}
-
-.n-icon {
-    color: green !important;
-}
-
 .n-base-selection {
     --n-border-active: 1px solid #E0E0E0 !important;
     --n-border-focus: 1px solid #E0E0E0 !important;

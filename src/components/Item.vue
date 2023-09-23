@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watchEffect } from 'vue';
 import { useRoute } from 'vue-router';
 import { NRadioGroup, NRadioButton, NModal, NCard, NIcon, useMessage } from 'naive-ui';
 import { CheckmarkSharp } from '@vicons/ionicons5'
@@ -12,43 +12,32 @@ interface Item {
     name: string
     intro: string
     price: number
-    maxSum: number
+    items: { item: string, maxSum: number }[]
     pictures: { id: string, img: string }[]
+
 }
+
+interface Weight {
+    value: string
+    label: string
+}
+
 const db = getDatabase();
 const userStore = useUserStore();
 const message = useMessage()
 const route = useRoute()
 const items = ref<Item[] | null>(null)
 const scaleImg = ref<string>("")
-const selectGroup = ref<string | null>(null)
+const isNotAvailableItem = ref<string>("")
+const carLength = ref<number | null>(null)
+const selectWeight = ref<string | null>(null)
 const selectPackage = ref<string | null>(null)
 const count = ref<number>(1)
 const maxSum = ref<number>(1)
 const showModal = ref<boolean>(false)
 const isAlreadyHave = ref<boolean>(false)
-const groups = [
-    {
-        value: "四兩 (150克)",
-        label: "四兩 (150克)"
-    },
-    {
-        value: '半斤 (300克)',
-        label: '半斤 (300克)'
-    },
-    {
-        value: '一斤 (600克)',
-        label: '一斤 (600克)'
-    },
-    {
-        value: '三斤',
-        label: '三斤'
-    },
-    {
-        value: '五斤',
-        label: '五斤'
-    }
-]
+const isNotAvailable = ref<boolean>(false)
+const weight = ref<Weight[]>([])
 
 const packages = [
     {
@@ -83,32 +72,44 @@ const handlePlusCount = () => {
 
 const handleAddCar = (selectId: string) => {
     if (localStorage.user && items.value) {
-        showModal.value = true
-        const selectItem = items.value.filter(item => item.id === selectId)[0]
-        const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
-        onValue(favoriteRef, (snapshot) => {
-            snapshot.val().forEach((item, index) => {
-                if (item.id === selectId && selectItem.maxSum - count.value > 0) {
-                    isAlreadyHave.value = true
-                    update(dref(db, `users/${userStore.userName}/favorites/${index}`), {
-                        sum: item.sum += 1
-                    });
+        if (selectWeight.value && selectPackage.value) {
+            showModal.value = true
+            const selectItem = items.value.filter(item => item.id === selectId)[0]
+            const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
+            onValue(favoriteRef, (snapshot) => {
+                const data = snapshot.val()
+                if (data) {
+                    carLength.value = data.length
+                    data.forEach((item, index) => {
+                        if (item.id === selectId && maxSum.value - count.value >= 0) {
+                            isAlreadyHave.value = true
+                            update(dref(db, `users/${userStore.userName}/favorites/${index}`), {
+                                sum: item.sum += 1
+                            });
+                        }
+                    })
                 }
-            })
-        }, {
-            onlyOnce: true
-        });
-        if (!isAlreadyHave.value) {
-            update(dref(db, `users/${userStore.userName}/favorites/${Number(selectId) - 1}`), {
-                id: selectId,
-                name: selectItem.name,
-                sum: 1
+            }, {
+                onlyOnce: true
             });
+            if (!isAlreadyHave.value) {
+                update(dref(db, `users/${userStore.userName}/favorites/${carLength.value ? carLength.value : 0}`), {
+                    id: selectId,
+                    img: selectItem.img,
+                    name: selectItem.name,
+                    weight: selectWeight.value,
+                    package: selectPackage.value,
+                    sum: 1
+                });
+            }
+            isAlreadyHave.value = false
+            setTimeout(() => {
+                showModal.value = false
+            }, 1500)
         }
-        isAlreadyHave.value = false
-        setTimeout(() => {
-            showModal.value = false
-        }, 1500)
+        else {
+            message.warning("請選擇商品")
+        }
     }
     else {
         message.warning("請先登入會員！")
@@ -116,7 +117,7 @@ const handleAddCar = (selectId: string) => {
 }
 
 const handleSubmit = () => {
-    console.log(selectGroup.value, selectPackage.value)
+    console.log(selectWeight.value, selectPackage.value)
 }
 
 const getItem = () => {
@@ -126,15 +127,35 @@ const getItem = () => {
         items.value.forEach(item => {
             if (item.id === route.params.id) {
                 scaleImg.value = item.pictures[0].img
-                maxSum.value = item.maxSum
+                item.items.forEach(element => {
+                    weight.value.push({ value: element.item, label: element.item })
+                })
             }
         })
-
     });
 }
 
 onMounted(() => {
     getItem()
+})
+
+watchEffect(() => {
+    if (items.value) {
+        items.value.forEach(item => {
+            if (item.id === route.params.id) {
+                item.items.forEach(element => {
+                    if (element.maxSum === 0) {
+                        isNotAvailableItem.value = element.item
+                        isNotAvailable.value = true
+                    }
+                    if (element.item === selectWeight.value) {
+                        count.value = 1
+                        maxSum.value = element.maxSum
+                    }
+                })
+            }
+        })
+    }
 })
 </script>
 
@@ -146,12 +167,13 @@ onMounted(() => {
             </div>
             <div class="lg:w-[510px] flex lg:mx-auto">
                 <div v-for="picture of item.pictures" :key="picture.id" class="lg:mx-[.25vw] lg:my-[1vh]">
-                    <img :src="picture.img" :class="scaleImg === picture.img ? 'opacity-50 cursor-default' : 'opacity-100'"
-                        class="object-contain cursor-pointer" @click="handleToScale(picture.img)">
+                    <img :src="picture.img"
+                        :class="scaleImg === picture.img ? 'opacity-50 cursor-auto' : 'opacity-100  cursor-pointer'"
+                        class="object-contain" @click="handleToScale(picture.img)">
                 </div>
             </div>
         </div>
-        <div v-for="item of filterItem" :key="item.id" class="lg:w-[30vw] lg:h-full flex flex-col lg:mx-[2.5vw]">
+        <div v-for="item of filterItem" :key="item.id" class="lg:w-[35vw] lg:h-full flex flex-col lg:mx-[2.5vw]">
             <div class="text-2xl text-[#8F2E17]">{{ item.name }}</div>
             <div class="lg:py-[2vh] text-base text-[#757575]">{{ item.intro }}</div>
             <div class="border border-[#8AA899]"></div>
@@ -159,8 +181,9 @@ onMounted(() => {
             <div>
                 <div class="group lg:h-[20vh] lg:mb-[2vh]">
                     <div class="text-lg text-[#424242]">購買克數：</div>
-                    <NRadioGroup v-model:value="selectGroup" name="groups">
-                        <NRadioButton v-for="item of groups" :key="item.value" :value="item.value" :label="item.label" />
+                    <NRadioGroup v-model:value="selectWeight" name="weight">
+                        <NRadioButton v-for="item of weight" :key="item.value" :value="item.value" :label="item.label"
+                            :disabled="isNotAvailableItem === item.label && isNotAvailable" />
                     </NRadioGroup>
                 </div>
                 <div class="package">
@@ -178,19 +201,19 @@ onMounted(() => {
                         </div>
                     </div>
                     <div class="flex justify-end lg:mt-[6vh]">
-                        <button class="lg:w-[7.5rem] p-2 rounded-[0.3125rem]  lg:mx-[1vw] text-[#F5F5F5] bg-[#5C6E58]"
+                        <button class="lg:w-[8vw] lg:p-2 lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
                             @click="handleAddCar(item.id)">加入購物車</button>
                         <NModal v-model:show="showModal" :mask-closable="false" v-bind:close-on-esc="false">
                             <NCard style="width: 600px" :bordered="false" size="huge" role="card" aria-modal="true">
                                 商品已加入購物車！
                                 <template #footer>
                                     <NIcon size="40">
-                                        <CheckmarkSharp />
+                                        <CheckmarkSharp class="text-[green]" />
                                     </NIcon>
                                 </template>
                             </NCard>
                         </NModal>
-                        <button class="lg:w-[6.38rem] p-2 rounded-[0.3125rem] text-[#F5F5F5] bg-[#8F2E17]"
+                        <button class="lg:w-[7vw] lg:p-2 rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
                             @click="handleSubmit">立即購買</button>
                     </div>
                 </div>
@@ -265,15 +288,6 @@ onMounted(() => {
 
 .n-card>.n-card__content {
     text-align: center !important;
-    font-size: 20px !important
-}
-
-.n-card>.n-card__content,
-.n-card>.n-card__footer {
-    text-align: center !important;
-}
-
-.n-icon {
-    color: green !important;
+    font-size: 20px !important;
 }
 </style>
