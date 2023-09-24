@@ -21,7 +21,7 @@ const route = useRoute()
 const router = useRouter()
 const message = useMessage()
 const items = ref<Item[] | null>(null)
-const selected = ref<string | null>("")
+const selected = ref<string | null>(null)
 const options = [
     {
         label: "400~1500/一斤",

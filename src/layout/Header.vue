@@ -3,11 +3,10 @@ import firebaseConfig from '@/config/firebaseConfig'
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { getDatabase, ref as dref, update, onValue } from "firebase/database";
 import { onMounted, ref } from 'vue'
-import { NModal, NCard, NBadge, NDropdown, NPopover, NIcon, NSpin, useMessage } from 'naive-ui'
-import { Close } from '@vicons/ionicons5'
+import { NModal, NCard, NBadge, NDropdown, NPopover, NSpin, useMessage } from 'naive-ui'
 import { useUserStore } from "@/stores/user";
 
-interface Item {
+interface FavoriteItem {
     id: string
     img: string
     name: string
@@ -22,9 +21,10 @@ const userStore = useUserStore();
 const provider = new GoogleAuthProvider();
 const auth = getAuth();
 const message = useMessage()
-const favoriteItem = ref<Item[] | null>(null)
+const favoriteItem = ref<FavoriteItem[] | null>(null)
 const showModal = ref<boolean>(false)
-const selected = ref<number | null>(null)
+const selectWeight = ref<string | null>(null)
+const selectPackage = ref<string | null>(null)
 const showLoading = ref<boolean>(false)
 const options = [
     {
@@ -75,61 +75,83 @@ const handleUpdateShow = (show: boolean) => {
         userStore.showCar = false
 }
 
-const handleMinusCount = (selectId: string) => {
-    console.log(selectId)
-    // if (selectSum === 1) {
-    //     showModal.value = true
-    //     return
-    // }
-    // update(dref(db, `users/${userStore.userName}/favorites/${selectId}`), {
-    //     sum: selectSum -= 1
-    // });
+const handleMinusCount = (Weight: string, Package: string) => {
+    if (favoriteItem.value) {
+        selectWeight.value = Weight
+        selectPackage.value = Package
+        favoriteItem.value.forEach(item => {
+            if (item.weight === Weight && item.package === Package) {
+                item.sum !== 1 ? update(dref(db, `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`), {
+                    sum: item.sum -= 1
+                }) : showModal.value = true
+            }
+        })
+    }
 }
 
-const handlePlusCount = (selectId: string) => {
-    // update(dref(db, `users/${userStore.userName}/favorites/${selectId}`), {
-    //     sum: selectSum += 1
-    // });
+const handlePlusCount = (Weight: string, Package: string) => {
+    if (favoriteItem.value) {
+        userStore.carWeight = Weight
+        favoriteItem.value.forEach(item => {
+            if (item.weight === Weight && item.package === Package) {
+                item.sum < userStore.carMaxSum ? update(dref(db, `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`), {
+                    sum: item.sum += 1
+                }) : item.sum
+            }
+        })
+    }
+}
+
+const handleToClear = async () => {
+    showLoading.value = true
+    await update(dref(db), { [`users/${userStore.userName}/favorites`]: null })
+    showLoading.value = false
+    userStore.showCar = false
 }
 
 const handleToSubmit = async () => {
-    await update(dref(db, `users/${userStore.userName}/favorites/${selected.value}`), {
-        id: null,
-        img: null,
-        name: null,
-        package: null,
-        weight: null,
-        sum: null
-    });
-    showLoading.value = true
+    if (favoriteItem.value) {
+        favoriteItem.value?.forEach(async item => {
+            if (item.weight === selectWeight.value && item.package === selectPackage.value) {
+                await update(dref(db, `users/${userStore.userName}/favorites/${item.name}_${selectWeight.value}_${selectPackage.value}`), {
+                    id: null,
+                    img: null,
+                    name: null,
+                    package: null,
+                    weight: null,
+                    sum: null
+                });
+            }
+        })
+    }
     showModal.value = false
+    favoriteItem.value?.length === 0 ? userStore.showCar = false : userStore.showCar = true
 }
 
 const getUser = () => {
     if (localStorage.user) {
         const { displayName } = JSON.parse(localStorage.user)
         userStore.userName = displayName
-        const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
-        onValue(favoriteRef, (snapshot) => {
-            const data = snapshot.val()
-            if (data)
-                userStore.favoriteSum = data.length
-        });
     }
 }
 
-const getItem = () => {
+const getFavoriteItem = () => {
     const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
     onValue(favoriteRef, (snapshot) => {
-        // console.log(snapshot.val())
-        // favoriteItem.value = [...snapshot.val()]
-        // console.log(favoriteItem.value)
+        if (snapshot.exists()) {
+            const data = Object.values(snapshot.val()) as FavoriteItem[]
+            favoriteItem.value = data.filter(item => item)
+            userStore.favoriteSum = data.filter(item => item).length
+        } else {
+            favoriteItem.value = []
+            userStore.favoriteSum = 0
+        }
     });
 }
 
 onMounted(() => {
     getUser()
-    getItem()
+    getFavoriteItem()
 })
 
 </script>
@@ -164,61 +186,62 @@ onMounted(() => {
                         <img src="/img/header/car.png" class="lg:mx-[1vw] object-contain cursor-pointer"
                             @click="userStore.showCar = !userStore.showCar">
                     </template>
-                    <div v-if="userStore.favoriteSum" class="car relative">
-                        <div class="absolute top-0 right-0 -translate-y-1/4 translate-x-1/3">
-                            <NIcon size="25">
-                                <Close class="text-[#9E9E9E] cursor-pointer" @click="userStore.showCar = false" />
-                            </NIcon>
-                        </div>
-                        <div v-for="item of favoriteItem" :key="item.id" class="w-fit flex justify-center items-center">
-                            <div class="my-[1vh]">
-                                <img :src="item.img" class="w-[5rem] h-[5rem]" alt="">
-                            </div>
-                            <div class="mx-[1vw]">
-                                <div class="text-base text-[#5C6E58]">
-                                    {{ item.name }}
+                    <NSpin :show="showLoading">
+                        <div v-if="userStore.favoriteSum" class="car">
+                            <div v-for="item of favoriteItem" :key="item.id" class="w-fit flex justify-center items-center">
+                                <div class="my-[1vh]">
+                                    <img :src="item.img" class="w-[5rem] h-[5rem]" alt="">
                                 </div>
-                                <div class="text-[#9E9E9E]">
-                                    {{ item.weight }} / {{ item.package }}
-                                </div>
-                                <div class="w-fit flex justify-center items-center">
-                                    <div class="text-[#9E9E9E]">數量：</div>
-                                    <div class="flex">
-                                        <img src="/img/header/minus.png" class="cursor-pointer"
-                                            @click="handleMinusCount(item.id)">
-                                        <div class="lg:mx-[.5vw] lg:my-auto">{{ item.sum }}</div>
-                                        <img src="/img/header/plus.png" class="cursor-pointer"
-                                            @click="handlePlusCount(item.id)">
+                                <div class="mx-[1vw]">
+                                    <div class="text-base text-[#5C6E58]">
+                                        {{ item.name }}
+                                    </div>
+                                    <div class="text-[#9E9E9E]">
+                                        {{ item.weight }} / {{ item.package }}
+                                    </div>
+                                    <div class="w-fit flex justify-center items-center">
+                                        <div class="text-[#9E9E9E]">數量：</div>
+                                        <div class="flex">
+                                            <img src="/img/header/minus.png" class="cursor-pointer"
+                                                @click="handleMinusCount(item.weight, item.package)">
+                                            <div class="lg:mx-[.5vw] lg:my-auto">{{ item.sum }}</div>
+                                            <img src="/img/header/plus.png" class="cursor-pointer"
+                                                @click="handlePlusCount(item.weight, item.package)">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="flex justify-end lg:my-[1vh]">
-                            <button class="lg:w-[5vw] lg:p-2 rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]">全部清空</button>
-                            <NModal v-model:show="showModal" v-bind:close-on-esc="false">
-                                <NCard style="width: 300px" title="是否刪除此品項？" size="medium" role="card" aria-modal="true">
-                                    <template #footer>
-                                        <div class="flex justify-evenly items-center">
-                                            <div>
-                                                <button class="lg:w-[5vw] lg:p-1 rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
-                                                    @click="showModal = false">取消</button>
+                            <div class="flex justify-end lg:my-[1vh]">
+                                <button class="lg:w-[5vw] lg:p-2 rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
+                                    @click="handleToClear">全部清空</button>
+                                <NModal v-model:show="showModal" v-bind:close-on-esc="false">
+                                    <NCard style="width: 300px" title="是否刪除此品項？" size="medium" role="card"
+                                        aria-modal="true">
+                                        <template #footer>
+                                            <div class="flex justify-evenly items-center">
+                                                <div>
+                                                    <button
+                                                        class="lg:w-[5vw] lg:p-1 rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
+                                                        @click="showModal = false">取消</button>
+                                                </div>
+                                                <div>
+                                                    <button
+                                                        class="lg:w-[5vw] lg:p-1 rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
+                                                        @click="handleToSubmit">確定</button>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <button class="lg:w-[5vw] lg:p-1 rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
-                                                    @click="handleToSubmit">確定</button>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </NCard>
-                            </NModal>
-                            <button
-                                class="lg:w-[5vw] lg:p-2 lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]">訂單結帳</button>
-                            <!-- <NSpin size="medium" :show="showLoading"></NSpin> -->
+                                        </template>
+                                    </NCard>
+                                </NModal>
+                                <button
+                                    class="lg:w-[5vw] lg:p-2 lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]">訂單結帳</button>
+                                <!-- <NSpin size="medium" :show="showLoading"></NSpin> -->
+                            </div>
                         </div>
-                    </div>
-                    <div v-else>
-                        尚無商品
-                    </div>
+                        <div v-else>
+                            尚無商品
+                        </div>
+                    </NSpin>
                 </NPopover>
             </NBadge>
             <div class="flex justify-center items-center text-lg">

@@ -17,6 +17,15 @@ interface Item {
 
 }
 
+interface FavoriteItem {
+    id: string
+    img: string
+    name: string
+    weight: string
+    package: string
+    sum: number
+}
+
 interface Weight {
     value: string
     label: string
@@ -29,7 +38,6 @@ const route = useRoute()
 const items = ref<Item[] | null>(null)
 const scaleImg = ref<string>("")
 const isNotAvailableItem = ref<string>("")
-const carLength = ref<number | null>(null)
 const selectWeight = ref<string | null>(null)
 const selectPackage = ref<string | null>(null)
 const count = ref<number>(1)
@@ -77,15 +85,14 @@ const handleAddCar = (selectId: string) => {
             const selectItem = items.value.filter(item => item.id === selectId)[0]
             const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
             onValue(favoriteRef, (snapshot) => {
-                const data = snapshot.val()
-                if (data) {
-                    carLength.value = data.length
-                    data.forEach((item, index) => {
-                        if (item.id === selectId && maxSum.value - count.value >= 0) {
-                            isAlreadyHave.value = true
-                            update(dref(db, `users/${userStore.userName}/favorites/${index}`), {
+                if (snapshot.exists()) {
+                    const data = Object.values(snapshot.val()) as FavoriteItem[]
+                    data.forEach(item => {
+                        if (item.id === selectId && item.weight === selectWeight.value && item.package === selectPackage.value && maxSum.value - count.value >= 0) {
+                            update(dref(db, `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`), {
                                 sum: item.sum += 1
                             });
+                            isAlreadyHave.value = true
                         }
                     })
                 }
@@ -93,16 +100,16 @@ const handleAddCar = (selectId: string) => {
                 onlyOnce: true
             });
             if (!isAlreadyHave.value) {
-                update(dref(db, `users/${userStore.userName}/favorites/${carLength.value ? carLength.value : 0}`), {
+                update(dref(db, `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`), {
                     id: selectId,
                     img: selectItem.img,
                     name: selectItem.name,
                     weight: selectWeight.value,
                     package: selectPackage.value,
-                    sum: 1
+                    sum: count.value
                 });
             }
-            isAlreadyHave.value = false
+            isAlreadyHave.value = !isAlreadyHave.value
             setTimeout(() => {
                 showModal.value = false
             }, 1500)
@@ -123,15 +130,17 @@ const handleSubmit = () => {
 const getItem = () => {
     const teaRef = dref(db, `teas/`);
     onValue(teaRef, (snapshot) => {
-        items.value = [...snapshot.val()]
-        items.value.forEach(item => {
-            if (item.id === route.params.id) {
-                scaleImg.value = item.pictures[0].img
-                item.items.forEach(element => {
-                    weight.value.push({ value: element.item, label: element.item })
-                })
-            }
-        })
+        if (snapshot.exists()) {
+            items.value = [...snapshot.val()]
+            items.value.forEach(item => {
+                if (item.id === route.params.id) {
+                    scaleImg.value = item.pictures[0].img
+                    item.items.forEach(element => {
+                        weight.value.push({ value: element.item, label: element.item })
+                    })
+                }
+            })
+        }
     });
 }
 
@@ -151,6 +160,9 @@ watchEffect(() => {
                     if (element.item === selectWeight.value) {
                         count.value = 1
                         maxSum.value = element.maxSum
+                    }
+                    if (element.item === userStore.carWeight) {
+                        userStore.carMaxSum = element.maxSum
                     }
                 })
             }
