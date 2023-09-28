@@ -5,11 +5,13 @@ import { getDatabase, ref as dref, update, onValue } from "firebase/database";
 import { onMounted, ref } from 'vue'
 import { NModal, NCard, NBadge, NDropdown, NPopover, NSpin, useMessage } from 'naive-ui'
 import { useUserStore } from "@/stores/user";
+import { router } from '@/router';
 
 interface FavoriteItem {
     id: string
     img: string
     name: string
+    price: number
     weight: string
     package: string
     sum: number
@@ -102,14 +104,7 @@ const handlePlusCount = (Weight: string, Package: string) => {
     }
 }
 
-const handleToClear = async () => {
-    showLoading.value = true
-    await update(dref(db), { [`users/${userStore.userName}/favorites`]: null })
-    showLoading.value = false
-    userStore.showCar = false
-}
-
-const handleToSubmit = async () => {
+const handleSubmit = () => {
     if (favoriteItem.value) {
         favoriteItem.value?.forEach(async item => {
             if (item.weight === selectWeight.value && item.package === selectPackage.value) {
@@ -117,6 +112,7 @@ const handleToSubmit = async () => {
                     id: null,
                     img: null,
                     name: null,
+                    price: null,
                     package: null,
                     weight: null,
                     sum: null
@@ -125,7 +121,18 @@ const handleToSubmit = async () => {
         })
     }
     showModal.value = false
-    favoriteItem.value?.length === 0 ? userStore.showCar = false : userStore.showCar = true
+}
+
+const handleClear = async () => {
+    showLoading.value = true
+    await update(dref(db), { [`users/${userStore.userName}/favorites`]: null })
+    showLoading.value = false
+    userStore.showCar = false
+}
+
+const handleToCheckout = () => {
+    userStore.showCar = false
+    router.push('/checkout')
 }
 
 const getUser = () => {
@@ -212,30 +219,30 @@ onMounted(() => {
                                 </div>
                             </div>
                             <div class="flex justify-end lg:my-[1vh]">
-                                <button class="lg:w-[5vw] lg:p-2 rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
-                                    @click="handleToClear">全部清空</button>
-                                <NModal v-model:show="showModal" v-bind:close-on-esc="false">
+                                <button class="lg:px-[1vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
+                                    @click="handleClear">全部清空</button>
+                                <NModal v-model:show="showModal" v-bind:close-on-esc="false" class="header">
                                     <NCard style="width: 300px" title="是否刪除此品項？" size="medium" role="card"
                                         aria-modal="true">
                                         <template #footer>
                                             <div class="flex justify-evenly items-center">
                                                 <div>
-                                                    <button
-                                                        class="lg:w-[5vw] lg:p-1 rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
+                                                    <button type="button"
+                                                        class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
                                                         @click="showModal = false">取消</button>
                                                 </div>
                                                 <div>
-                                                    <button
-                                                        class="lg:w-[5vw] lg:p-1 rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
-                                                        @click="handleToSubmit">確定</button>
+                                                    <button type="button"
+                                                        class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
+                                                        @click="handleSubmit">確定</button>
                                                 </div>
                                             </div>
                                         </template>
                                     </NCard>
                                 </NModal>
-                                <button
-                                    class="lg:w-[5vw] lg:p-2 lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]">訂單結帳</button>
-                                <!-- <NSpin size="medium" :show="showLoading"></NSpin> -->
+                                <button type="button"
+                                    class="lg:px-[1vw] lg:py-[.5vh] lg:ml-[.5vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
+                                    @click="handleToCheckout">訂單結帳</button>
                             </div>
                         </div>
                         <div v-else>
@@ -278,11 +285,16 @@ onMounted(() => {
     box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.25) !important;
 }
 
-.n-card.n-modal {
+.header {
     --n-border-radius: 5px !important;
     --n-title-text-color: #757575 !important;
     font-size: 16px !important;
     text-align: center;
+}
+
+.n-spin-container {
+    --n-color: #8AA899 !important;
+    --n-text-color: #8AA899 !important;
 }
 
 .router-link-exact-active {

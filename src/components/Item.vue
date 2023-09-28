@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watchEffect } from 'vue';
-import { useRoute } from 'vue-router';
 import { NRadioGroup, NRadioButton, NModal, NCard, NIcon, useMessage } from 'naive-ui';
 import { CheckmarkSharp } from '@vicons/ionicons5'
 import { getDatabase, ref as dref, update, onValue } from "firebase/database";
 import { useUserStore } from "@/stores/user";
+import { useRouter } from 'vue-router';
 
 interface Item {
     id: string
@@ -21,6 +21,7 @@ interface FavoriteItem {
     id: string
     img: string
     name: string
+    price: number
     weight: string
     package: string
     sum: number
@@ -33,9 +34,11 @@ interface Weight {
 
 const db = getDatabase();
 const userStore = useUserStore();
+const router = useRouter()
+const props = defineProps(['id'])
 const message = useMessage()
-const route = useRoute()
 const items = ref<Item[] | null>(null)
+const favoriteItem = ref<FavoriteItem[] | null>(null)
 const scaleImg = ref<string>("")
 const isNotAvailableItem = ref<string>("")
 const selectWeight = ref<string | null>(null)
@@ -45,6 +48,7 @@ const maxSum = ref<number>(1)
 const showModal = ref<boolean>(false)
 const isAlreadyHave = ref<boolean>(false)
 const isNotAvailable = ref<boolean>(false)
+const isAlreadyMax = ref<boolean>(false)
 const weight = ref<Weight[]>([])
 
 const packages = [
@@ -60,11 +64,11 @@ const packages = [
 
 const filterItem = computed(() => {
     if (items.value) {
-        return items.value.filter(item => item.id === route.params.id)
+        return items.value.filter(item => item.id === props.id)
     }
 })
 
-const handleToScale = (selectIdImg: string) => {
+const handleScale = (selectIdImg: string) => {
     scaleImg.value = selectIdImg
 }
 
@@ -78,38 +82,40 @@ const handlePlusCount = () => {
     }
 }
 
-const handleAddCar = (selectId: string) => {
+const handleAddCar = async (selectId: string) => {
     if (localStorage.user && items.value) {
         if (selectWeight.value && selectPackage.value) {
             showModal.value = true
-            const selectItem = items.value.filter(item => item.id === selectId)[0]
             const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
             onValue(favoriteRef, (snapshot) => {
                 if (snapshot.exists()) {
                     const data = Object.values(snapshot.val()) as FavoriteItem[]
-                    data.forEach(item => {
+                    data.forEach(async item => {
                         if (item.id === selectId && item.weight === selectWeight.value && item.package === selectPackage.value && maxSum.value - count.value >= 0) {
-                            update(dref(db, `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`), {
+                            await update(dref(db, `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`), {
                                 sum: item.sum += 1
+                            }).then(() => {
+                                isAlreadyHave.value = true
                             });
-                            isAlreadyHave.value = true
                         }
                     })
                 }
             }, {
                 onlyOnce: true
             });
+            const selectItem = items.value.filter(item => item.id === selectId)[0]
             if (!isAlreadyHave.value) {
-                update(dref(db, `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`), {
+                await update(dref(db, `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`), {
                     id: selectId,
                     img: selectItem.img,
                     name: selectItem.name,
+                    price: selectItem.price,
                     weight: selectWeight.value,
                     package: selectPackage.value,
                     sum: count.value
-                });
+                })
             }
-            isAlreadyHave.value = !isAlreadyHave.value
+            isAlreadyHave.value = false
             setTimeout(() => {
                 showModal.value = false
             }, 1500)
@@ -123,8 +129,48 @@ const handleAddCar = (selectId: string) => {
     }
 }
 
-const handleSubmit = () => {
-    console.log(selectWeight.value, selectPackage.value)
+const handleSubmit = async (selectId: string) => {
+    if (localStorage.user && items.value) {
+        if (selectWeight.value && selectPackage.value) {
+            const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
+            onValue(favoriteRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = Object.values(snapshot.val()) as FavoriteItem[]
+                    data.forEach(async item => {
+                        if (item.id === selectId && item.weight === selectWeight.value && item.package === selectPackage.value && maxSum.value - count.value >= 0) {
+                            await update(dref(db, `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`), {
+                                sum: item.sum += 1
+                            }).then(() => {
+                                isAlreadyHave.value = true
+                            });
+                        }
+                    })
+                }
+            }, {
+                onlyOnce: true
+            });
+            const selectItem = items.value.filter(item => item.id === selectId)[0]
+            if (!isAlreadyHave.value) {
+                await update(dref(db, `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`), {
+                    id: selectId,
+                    img: selectItem.img,
+                    name: selectItem.name,
+                    price: selectItem.price,
+                    weight: selectWeight.value,
+                    package: selectPackage.value,
+                    sum: count.value
+                })
+            }
+            isAlreadyHave.value = false
+            router.push('/checkout')
+        }
+        else {
+            message.warning("請選擇商品")
+        }
+    }
+    else {
+        message.warning("請先登入會員！")
+    }
 }
 
 const getItem = () => {
@@ -133,7 +179,7 @@ const getItem = () => {
         if (snapshot.exists()) {
             items.value = [...snapshot.val()]
             items.value.forEach(item => {
-                if (item.id === route.params.id) {
+                if (item.id === props.id) {
                     scaleImg.value = item.pictures[0].img
                     item.items.forEach(element => {
                         weight.value.push({ value: element.item, label: element.item })
@@ -144,14 +190,25 @@ const getItem = () => {
     });
 }
 
+const getFavoriteItem = () => {
+    const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
+    onValue(favoriteRef, (snapshot) => {
+        if (snapshot.exists()) {
+            const data = Object.values(snapshot.val()) as FavoriteItem[]
+            favoriteItem.value = data
+        }
+    });
+}
+
 onMounted(() => {
     getItem()
+    getFavoriteItem()
 })
 
 watchEffect(() => {
     if (items.value) {
         items.value.forEach(item => {
-            if (item.id === route.params.id) {
+            if (item.id === props.id) {
                 item.items.forEach(element => {
                     if (element.maxSum === 0) {
                         isNotAvailableItem.value = element.item
@@ -168,11 +225,18 @@ watchEffect(() => {
             }
         })
     }
+    if (favoriteItem.value) {
+        favoriteItem.value.forEach(item => {
+            if (item.id === props.id) {
+
+            }
+        })
+    }
 })
 </script>
 
 <template>
-    <div class="lg:w-full lg:h-[80vh] flex justify-center items-center lg:mt-[10vh]">
+    <div class="lg:w-full lg:h-[80vh] flex justify-center items-center">
         <div v-for="item of filterItem" :key="item.id" class="lg:h-full flex flex-col lg:mx-[5vw]">
             <div class="lg:mx-auto">
                 <img :src="scaleImg" class="w-[500px] object-contain">
@@ -181,11 +245,11 @@ watchEffect(() => {
                 <div v-for="picture of item.pictures" :key="picture.id" class="lg:mx-[.25vw] lg:my-[1vh]">
                     <img :src="picture.img"
                         :class="scaleImg === picture.img ? 'opacity-50 cursor-auto' : 'opacity-100  cursor-pointer'"
-                        class="object-contain" @click="handleToScale(picture.img)">
+                        class="object-contain" @click="handleScale(picture.img)">
                 </div>
             </div>
         </div>
-        <div v-for="item of filterItem" :key="item.id" class="lg:w-[35vw] lg:h-full flex flex-col lg:mx-[2.5vw]">
+        <div v-for="item of filterItem" :key="item.id" class="lg:w-[40vw] lg:h-full flex flex-col text-left lg:mx-[2.5vw]">
             <div class="text-2xl text-[#8F2E17]">{{ item.name }}</div>
             <div class="lg:py-[2vh] text-base text-[#757575]">{{ item.intro }}</div>
             <div class="border border-[#8AA899]"></div>
@@ -206,17 +270,23 @@ watchEffect(() => {
                                 :label="item.label" />
                         </NRadioGroup>
                         <div class="flex justify-center items-end">
-                            <img src="/img/all-item/minus.jpg" class="cursor-pointer" @click="handleMinusCount">
-                            <div class="lg:mx-[1vw] lg:my-auto text-lg">{{ count }}</div>
-                            <img src="/img/all-item/plus.jpg" class="cursor-pointer" @click="handlePlusCount">
-                            <div class="lg:mx-[1vw] lg:my-auto text-sm text-[#757575]">剩餘數量{{ maxSum }}</div>
+                            <div class="flex">
+                                <img src="/img/all-item/minus.jpg" class="cursor-pointer" @click="handleMinusCount">
+                                <div class="lg:mx-[1vw] lg:my-auto text-lg">{{ count }}</div>
+                                <img src="/img/all-item/plus.jpg" class="cursor-pointer" @click="handlePlusCount">
+                            </div>
                         </div>
                     </div>
-                    <div class="flex justify-end lg:mt-[6vh]">
-                        <button class="lg:w-[8vw] lg:p-2 lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
+                    <div class="flex justify-end lg:my-[1vh] lg:mx-[1vw] ">
+                        <div class="lg:my-auto text-sm text-[#757575]">剩餘數量{{ maxSum }}</div>
+                    </div>
+                    <div class="lg:w-full flex justify-end lg:mt-[1vh]">
+                        <button type="button"
+                            class="lg:px-[2vw] lg:py-[1vh] lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
+                            :class="isAlreadyMax ? 'opacity-50' : 'opacity-100'" :disabled="isAlreadyMax"
                             @click="handleAddCar(item.id)">加入購物車</button>
-                        <NModal v-model:show="showModal" :mask-closable="false" v-bind:close-on-esc="false">
-                            <NCard style="width: 600px" :bordered="false" size="huge" role="card" aria-modal="true">
+                        <NModal v-model:show="showModal" :mask-closable="false" v-bind:close-on-esc="false" class="item">
+                            <NCard style="width: 600px" :bordered="false" size="huge" role="card">
                                 商品已加入購物車！
                                 <template #footer>
                                     <NIcon size="40">
@@ -225,8 +295,8 @@ watchEffect(() => {
                                 </template>
                             </NCard>
                         </NModal>
-                        <button class="lg:w-[7vw] lg:p-2 rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
-                            @click="handleSubmit">立即購買</button>
+                        <button type="button" class="lg:px-[2vw] lg:py-[1vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
+                            @click="handleSubmit(item.id)">立即購買</button>
                     </div>
                 </div>
             </div>
@@ -252,7 +322,6 @@ watchEffect(() => {
     display: flex;
     flex-wrap: wrap;
     width: 300px;
-
 }
 
 .group .n-radio-group .n-radio-button {
@@ -298,8 +367,8 @@ watchEffect(() => {
     background-color: rgba(0, 0, 0, .1) !important;
 }
 
-.n-card>.n-card__content {
-    text-align: center !important;
-    font-size: 20px !important;
+.item {
+    text-align: center;
+    --n-font-size: 20px !important;
 }
 </style>

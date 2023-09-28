@@ -1,27 +1,26 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { NSelect, useMessage } from 'naive-ui';
+import Item from './Item.vue';
+import { NModal, NCard, NSelect } from 'naive-ui';
 import { Triangle, } from '@vicons/ionicons5'
 import { getDatabase, ref as dref, onValue } from "firebase/database";
-import { useUserStore } from "@/stores/user";
-import { useRoute, useRouter } from 'vue-router';
+
+import { useRoute } from 'vue-router';
 
 interface Item {
     id: string
     img: string
     name: string
-    maxSum: number
     category: string
     pictures: { id: string, img: string }[]
 }
 
 const db = getDatabase();
-const userStore = useUserStore();
 const route = useRoute()
-const router = useRouter()
-const message = useMessage()
 const items = ref<Item[] | null>(null)
 const selected = ref<string | null>(null)
+const selectId = ref<string | null>(null)
+const showModal = ref<boolean>(false)
 const options = [
     {
         label: "400~1500/一斤",
@@ -46,29 +45,22 @@ const handleFilterItem = (value: string) => {
     console.log(value)
 }
 
-const handleAddCar = () => {
-    if (localStorage.user && items.value) {
-        userStore.showCar = true
-    }
-    else {
-        message.warning("請先登入會員！")
-    }
-}
-
-const handleToItem = (selectId: string) => {
-    router.push({ path: `${route.fullPath}/${selectId}` })
+const handleAddCar = (id: string) => {
+    selectId.value = id
+    showModal.value = true
 }
 
 const getItem = () => {
     const teaRef = dref(db, `/teas`);
     onValue(teaRef, (snapshot) => {
-        items.value = [...snapshot.val()]
+        if (snapshot.exists())
+            items.value = [...snapshot.val()]
     });
+    selected.value = options[0].value
 }
 
 onMounted(() => {
     getItem()
-    selected.value = options[0].value
 })
 </script>
 
@@ -89,19 +81,20 @@ onMounted(() => {
             <div class="lg:w-[90vw] flex flex-wrap mx-auto">
                 <div v-for="item of filterItem" :key="item.id"
                     class="relative lg:w-[28vw] flex flex-col items-center lg:mx-[1vw] lg:my-[5vh]">
-                    <div class="relative">
-                        <img :src="item.img" class="object-contain cursor-pointer" @click="handleToItem(item.id)">
-                        <div v-show="item.maxSum === 0"
-                            class="flex justify-center items-center absolute top-0 left-0 w-full h-full text-3xl text-[red] bg-[rgba(255,255,255,.5)] z-10 ">
-                            已全數售出！
-                        </div>
+                    <div>
+                        <img :src="item.img" class="object-contain">
                     </div>
+                    <NModal v-model:show="showModal" class="getItem" preset="card" size="large" :block-scroll="true">
+                        <NCard :bordered="false">
+                            <Item :id="selectId"></Item>
+                        </NCard>
+                    </NModal>
                     <div class="text-base text-[#757575] lg:my-[1vh]">
                         {{ item.name }}
                     </div>
                     <div class="absolute bottom-[6vh] right-[2vw]">
                         <img src="/img/all-item/card-add.png" class="w-[48px] object-contain cursor-pointer"
-                            @click="handleAddCar">
+                            @click="handleAddCar(item.id)">
                     </div>
                 </div>
             </div>
@@ -130,5 +123,25 @@ onMounted(() => {
     --n-option-text-color-active: #5C6E58 !important;
     --n-option-text-color-pressed: #5C6E58 !important;
     --n-loading-color: #5C6E58 !important;
+}
+
+.getItem {
+    width: 90vw;
+    padding: 0 2vw;
+    --n-close-size: 25px !important;
+    --n-close-icon-size: 25px !important;
+}
+
+.getItem .n-base-icon {
+    background-color: white !important;
+    --n-close-icon-color: white !important;
+    --n-close-icon-color-hover: white !important;
+    --n-close-icon-color-pressed: white !important;
+    --n-close-color-hover: white !important;
+    --n-close-color-pressed: white !important;
+}
+
+.getItem .n-card__content {
+    padding: 0 !important;
 }
 </style>

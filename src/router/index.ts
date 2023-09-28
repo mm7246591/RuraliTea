@@ -18,22 +18,12 @@ const routes = [
     },
   },
   {
-    path: "/all-tea/:id",
-    name: "AllTeaItem",
-    component: () => import("../components/Item.vue"),
-  },
-  {
     path: "/gift-box",
     name: "GiftBox",
     component: () => import("../views/GiftBox.vue"),
     meta: {
       name: "茶葉禮盒",
     },
-  },
-  {
-    path: "/gift-box/:id",
-    name: "GiftBoxItem",
-    component: () => import("../components/Item.vue"),
   },
   {
     path: "/season-limited",
@@ -44,22 +34,12 @@ const routes = [
     },
   },
   {
-    path: "/season-limited/:id",
-    name: "SeasonLimitedItem",
-    component: () => import("../components/Item.vue"),
-  },
-  {
     path: "/mountain-tea",
     name: "MountainTea",
     component: () => import("../views/MountainTea.vue"),
     meta: {
       name: "高山茶",
     },
-  },
-  {
-    path: "/mountain-tea/:id",
-    name: "MountainTeaItem",
-    component: () => import("../components/Item.vue"),
   },
   {
     path: "/black-tea",
@@ -70,11 +50,6 @@ const routes = [
     },
   },
   {
-    path: "/black-tea/:id",
-    name: "BlackTeaItem",
-    component: () => import("../components/Item.vue"),
-  },
-  {
     path: "/contact",
     name: "Contact",
     component: () => import("../views/Contact.vue"),
@@ -82,7 +57,14 @@ const routes = [
       name: "聯絡我們",
     },
   },
-
+  {
+    path: "/checkout",
+    name: "Checkout",
+    component: () => import("../views/CheckOut.vue"),
+    meta: {
+      name: "結帳付款",
+    },
+  },
   {
     path: "/:path(.*)*",
     name: "error-page",
