@@ -45,8 +45,8 @@ const handleFilterItem = (value: string) => {
     console.log(value)
 }
 
-const handleAddCar = (id: string) => {
-    selectId.value = id
+const handleAddCar = (SelectId: string) => {
+    selectId.value = SelectId
     showModal.value = true
 }
 

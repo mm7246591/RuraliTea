@@ -41,14 +41,16 @@ const items = ref<Item[] | null>(null)
 const favoriteItem = ref<FavoriteItem[] | null>(null)
 const scaleImg = ref<string>("")
 const isNotAvailableItem = ref<string>("")
+const isAlreadyMax = ref<string>("")
 const selectWeight = ref<string | null>(null)
 const selectPackage = ref<string | null>(null)
 const count = ref<number>(1)
 const maxSum = ref<number>(1)
+const availableSum = ref<number>(1)
 const showModal = ref<boolean>(false)
 const isAlreadyHave = ref<boolean>(false)
 const isNotAvailable = ref<boolean>(false)
-const isAlreadyMax = ref<boolean>(false)
+
 const weight = ref<Weight[]>([])
 
 const packages = [
@@ -68,8 +70,8 @@ const filterItem = computed(() => {
     }
 })
 
-const handleScale = (selectIdImg: string) => {
-    scaleImg.value = selectIdImg
+const handleScale = (SelectIdImg: string) => {
+    scaleImg.value = SelectIdImg
 }
 
 const handleMinusCount = () => {
@@ -77,21 +79,22 @@ const handleMinusCount = () => {
 }
 
 const handlePlusCount = () => {
-    if (count.value < maxSum.value) {
+    if (maxSum.value - availableSum.value >= count.value) {
         count.value += 1
     }
 }
 
-const handleAddCar = async (selectId: string) => {
+const handleAddCar = async (SelectId: string) => {
     if (localStorage.user && items.value) {
         if (selectWeight.value && selectPackage.value) {
             showModal.value = true
+            const selectItem = items.value.filter(item => item.id === SelectId)[0]
             const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
             onValue(favoriteRef, (snapshot) => {
                 if (snapshot.exists()) {
                     const data = Object.values(snapshot.val()) as FavoriteItem[]
                     data.forEach(async item => {
-                        if (item.id === selectId && item.weight === selectWeight.value && item.package === selectPackage.value && maxSum.value - count.value >= 0) {
+                        if (item.id === SelectId && item.weight === selectWeight.value && item.package === selectPackage.value && maxSum.value - count.value >= 0) {
                             await update(dref(db, `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`), {
                                 sum: item.sum += 1
                             }).then(() => {
@@ -103,10 +106,9 @@ const handleAddCar = async (selectId: string) => {
             }, {
                 onlyOnce: true
             });
-            const selectItem = items.value.filter(item => item.id === selectId)[0]
             if (!isAlreadyHave.value) {
                 await update(dref(db, `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`), {
-                    id: selectId,
+                    id: SelectId,
                     img: selectItem.img,
                     name: selectItem.name,
                     price: selectItem.price,
@@ -129,15 +131,16 @@ const handleAddCar = async (selectId: string) => {
     }
 }
 
-const handleSubmit = async (selectId: string) => {
+const handleSubmit = async (SelectId: string) => {
     if (localStorage.user && items.value) {
         if (selectWeight.value && selectPackage.value) {
+            const selectItem = items.value.filter(item => item.id === SelectId)[0]
             const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
             onValue(favoriteRef, (snapshot) => {
                 if (snapshot.exists()) {
                     const data = Object.values(snapshot.val()) as FavoriteItem[]
                     data.forEach(async item => {
-                        if (item.id === selectId && item.weight === selectWeight.value && item.package === selectPackage.value && maxSum.value - count.value >= 0) {
+                        if (item.id === SelectId && item.weight === selectWeight.value && item.package === selectPackage.value && maxSum.value - count.value >= 0) {
                             await update(dref(db, `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`), {
                                 sum: item.sum += 1
                             }).then(() => {
@@ -149,10 +152,9 @@ const handleSubmit = async (selectId: string) => {
             }, {
                 onlyOnce: true
             });
-            const selectItem = items.value.filter(item => item.id === selectId)[0]
             if (!isAlreadyHave.value) {
                 await update(dref(db, `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`), {
-                    id: selectId,
+                    id: SelectId,
                     img: selectItem.img,
                     name: selectItem.name,
                     price: selectItem.price,
@@ -218,17 +220,15 @@ watchEffect(() => {
                         count.value = 1
                         maxSum.value = element.maxSum
                     }
-                    if (element.item === userStore.carWeight) {
-                        userStore.carMaxSum = element.maxSum
+                    if (favoriteItem.value) {
+                        favoriteItem.value.forEach(item => {
+                            if (item.id === props.id && selectWeight.value === item.weight && item.sum === element.maxSum) {
+                                availableSum.value = item.sum
+                                isAlreadyMax.value = item.weight
+                            }
+                        })
                     }
                 })
-            }
-        })
-    }
-    if (favoriteItem.value) {
-        favoriteItem.value.forEach(item => {
-            if (item.id === props.id) {
-
             }
         })
     }
@@ -283,8 +283,8 @@ watchEffect(() => {
                     <div class="lg:w-full flex justify-end lg:mt-[1vh]">
                         <button type="button"
                             class="lg:px-[2vw] lg:py-[1vh] lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
-                            :class="isAlreadyMax ? 'opacity-50' : 'opacity-100'" :disabled="isAlreadyMax"
-                            @click="handleAddCar(item.id)">加入購物車</button>
+                            :class="isAlreadyMax === selectWeight ? 'opacity-50' : 'opacity-100'"
+                            :disabled="isAlreadyMax === selectWeight" @click="handleAddCar(item.id)">加入購物車</button>
                         <NModal v-model:show="showModal" :mask-closable="false" v-bind:close-on-esc="false" class="item">
                             <NCard style="width: 600px" :bordered="false" size="huge" role="card">
                                 商品已加入購物車！
@@ -361,10 +361,6 @@ watchEffect(() => {
 
 .n-radio-group .n-radio-button:not(.n-radio-button--disabled):hover:not(.n-radio-button--checked) {
     color: #757575;
-}
-
-.n-modal-mask {
-    background-color: rgba(0, 0, 0, .1) !important;
 }
 
 .item {

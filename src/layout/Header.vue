@@ -2,10 +2,21 @@
 import firebaseConfig from '@/config/firebaseConfig'
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { getDatabase, ref as dref, update, onValue } from "firebase/database";
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watchEffect } from 'vue'
 import { NModal, NCard, NBadge, NDropdown, NPopover, NSpin, useMessage } from 'naive-ui'
 import { useUserStore } from "@/stores/user";
 import { router } from '@/router';
+
+interface Item {
+    id: string
+    img: string
+    name: string
+    intro: string
+    price: number
+    items: { item: string, maxSum: number }[]
+    pictures: { id: string, img: string }[]
+
+}
 
 interface FavoriteItem {
     id: string
@@ -23,6 +34,7 @@ const userStore = useUserStore();
 const provider = new GoogleAuthProvider();
 const auth = getAuth();
 const message = useMessage()
+const items = ref<Item[] | null>(null)
 const favoriteItem = ref<FavoriteItem[] | null>(null)
 const showModal = ref<boolean>(false)
 const selectWeight = ref<string | null>(null)
@@ -77,12 +89,16 @@ const handleUpdateShow = (show: boolean) => {
         userStore.showCar = false
 }
 
-const handleMinusCount = (Weight: string, Package: string) => {
+const handleMinusCount = async (SelectId: string, Weight: string, Package: string) => {
     if (favoriteItem.value) {
-        selectWeight.value = Weight
-        selectPackage.value = Package
+        await update(dref(db, `users/${userStore.userName}/`), {
+            carId: SelectId
+        })
+        await update(dref(db, `users/${userStore.userName}/`), {
+            carWeight: Weight
+        })
         favoriteItem.value.forEach(item => {
-            if (item.weight === Weight && item.package === Package) {
+            if (item.id === SelectId && item.weight === Weight && item.package === Package) {
                 item.sum !== 1 ? update(dref(db, `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`), {
                     sum: item.sum -= 1
                 }) : showModal.value = true
@@ -91,11 +107,16 @@ const handleMinusCount = (Weight: string, Package: string) => {
     }
 }
 
-const handlePlusCount = (Weight: string, Package: string) => {
+const handlePlusCount = async (SelectId: string, Weight: string, Package: string) => {
     if (favoriteItem.value) {
-        userStore.carWeight = Weight
+        await update(dref(db, `users/${userStore.userName}/`), {
+            carId: SelectId
+        })
+        await update(dref(db, `users/${userStore.userName}/`), {
+            carWeight: Weight
+        })
         favoriteItem.value.forEach(item => {
-            if (item.weight === Weight && item.package === Package) {
+            if (item.id === SelectId && item.weight === Weight && item.package === Package) {
                 item.sum < userStore.carMaxSum ? update(dref(db, `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`), {
                     sum: item.sum += 1
                 }) : item.sum
@@ -104,10 +125,10 @@ const handlePlusCount = (Weight: string, Package: string) => {
     }
 }
 
-const handleSubmit = () => {
+const handleSubmit = (SelectId: string) => {
     if (favoriteItem.value) {
         favoriteItem.value?.forEach(async item => {
-            if (item.weight === selectWeight.value && item.package === selectPackage.value) {
+            if (item.id === SelectId && item.weight === selectWeight.value && item.package === selectPackage.value) {
                 await update(dref(db, `users/${userStore.userName}/favorites/${item.name}_${selectWeight.value}_${selectPackage.value}`), {
                     id: null,
                     img: null,
@@ -142,6 +163,15 @@ const getUser = () => {
     }
 }
 
+const getItem = () => {
+    const teaRef = dref(db, `teas/`);
+    onValue(teaRef, (snapshot) => {
+        if (snapshot.exists()) {
+            items.value = [...snapshot.val()]
+        }
+    });
+}
+
 const getFavoriteItem = () => {
     const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
     onValue(favoriteRef, (snapshot) => {
@@ -154,11 +184,37 @@ const getFavoriteItem = () => {
             userStore.favoriteSum = 0
         }
     });
+    const carRef = dref(db, `users/${userStore.userName}/`);
+    onValue(carRef, (snapshot) => {
+        if (snapshot.exists()) {
+            userStore.carWeight = snapshot.val().carWeight
+            userStore.carMaxSum = snapshot.val().carMaxSum
+            userStore.carId = snapshot.val().carId
+        }
+    });
 }
 
 onMounted(() => {
     getUser()
+    getItem()
     getFavoriteItem()
+})
+
+watchEffect(() => {
+    if (items.value) {
+        items.value.forEach(item => {
+            if (item.id === userStore.carId) {
+                item.items.forEach(async element => {
+                    if (element.item === userStore.carWeight) {
+                        await update(dref(db, `users/${userStore.userName}/`), {
+                            carMaxSum: element.maxSum
+                        })
+                        userStore.carMaxSum = element.maxSum
+                    }
+                })
+            }
+        })
+    }
 })
 
 </script>
@@ -210,10 +266,29 @@ onMounted(() => {
                                         <div class="text-[#9E9E9E]">數量：</div>
                                         <div class="flex">
                                             <img src="/img/header/minus.png" class="cursor-pointer"
-                                                @click="handleMinusCount(item.weight, item.package)">
+                                                @click="handleMinusCount(item.id, item.weight, item.package)">
+                                            <NModal v-model:show="showModal" v-bind:close-on-esc="false" class="header">
+                                                <NCard style="width: 300px" title="是否刪除此品項？" size="medium" role="card"
+                                                    aria-modal="true">
+                                                    <template #footer>
+                                                        <div class="flex justify-evenly items-center">
+                                                            <div>
+                                                                <button type="button"
+                                                                    class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
+                                                                    @click="showModal = false">取消</button>
+                                                            </div>
+                                                            <div>
+                                                                <button type="button"
+                                                                    class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
+                                                                    @click="handleSubmit(item.id)">確定</button>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </NCard>
+                                            </NModal>
                                             <div class="lg:mx-[.5vw] lg:my-auto">{{ item.sum }}</div>
                                             <img src="/img/header/plus.png" class="cursor-pointer"
-                                                @click="handlePlusCount(item.weight, item.package)">
+                                                @click="handlePlusCount(item.id, item.weight, item.package)">
                                         </div>
                                     </div>
                                 </div>
@@ -221,25 +296,6 @@ onMounted(() => {
                             <div class="flex justify-end lg:my-[1vh]">
                                 <button class="lg:px-[1vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
                                     @click="handleClear">全部清空</button>
-                                <NModal v-model:show="showModal" v-bind:close-on-esc="false" class="header">
-                                    <NCard style="width: 300px" title="是否刪除此品項？" size="medium" role="card"
-                                        aria-modal="true">
-                                        <template #footer>
-                                            <div class="flex justify-evenly items-center">
-                                                <div>
-                                                    <button type="button"
-                                                        class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
-                                                        @click="showModal = false">取消</button>
-                                                </div>
-                                                <div>
-                                                    <button type="button"
-                                                        class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
-                                                        @click="handleSubmit">確定</button>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </NCard>
-                                </NModal>
                                 <button type="button"
                                     class="lg:px-[1vw] lg:py-[.5vh] lg:ml-[.5vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
                                     @click="handleToCheckout">訂單結帳</button>
@@ -290,6 +346,11 @@ onMounted(() => {
     --n-title-text-color: #757575 !important;
     font-size: 16px !important;
     text-align: center;
+
+}
+
+.n-modal-mask {
+    background-color: rgba(0, 0, 0, .1) !important;
 }
 
 .n-spin-container {

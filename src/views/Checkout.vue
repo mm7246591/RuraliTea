@@ -44,6 +44,42 @@ firebaseConfig
 const db = getDatabase();
 const userStore = useUserStore();
 
+const handleMinusCount = async (SelectId: string, Weight: string, Package: string) => {
+    if (favoriteItem.value) {
+        await update(dref(db, `users/${userStore.userName}/`), {
+            carId: SelectId
+        })
+        await update(dref(db, `users/${userStore.userName}/`), {
+            carWeight: Weight
+        })
+        favoriteItem.value.forEach(item => {
+            if (item.id === SelectId && item.weight === Weight && item.package === Package) {
+                item.sum !== 1 ? update(dref(db, `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`), {
+                    sum: item.sum -= 1
+                }) : item.sum
+            }
+        })
+    }
+}
+
+const handlePlusCount = async (SelectId: string, Weight: string, Package: string) => {
+    if (favoriteItem.value) {
+        await update(dref(db, `users/${userStore.userName}/`), {
+            carId: SelectId
+        })
+        await update(dref(db, `users/${userStore.userName}/`), {
+            carWeight: Weight
+        })
+        favoriteItem.value.forEach(item => {
+            if (item.id === SelectId && item.weight === Weight && item.package === Package) {
+                item.sum < userStore.carMaxSum ? update(dref(db, `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`), {
+                    sum: item.sum += 1
+                }) : item.sum
+            }
+        })
+    }
+}
+
 const getFavoriteItem = () => {
     const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
     onValue(favoriteRef, (snapshot) => {
@@ -110,9 +146,11 @@ watchEffect(() => {
                         </div>
                         <div>
                             <div class="flex">
-                                <img src="/img/all-item/minus.jpg" class="cursor-pointer">
-                                <div class="lg:mx-[1vw] lg:my-auto text-lg">{{ 1 }}</div>
-                                <img src="/img/all-item/plus.jpg" class="cursor-pointer">
+                                <img src="/img/all-item/minus.jpg" class="cursor-pointer"
+                                    @click="handleMinusCount(item.id, item.weight, item.package)">
+                                <div class="lg:mx-[1vw] lg:my-auto text-lg">{{ item.sum }}</div>
+                                <img src="/img/all-item/plus.jpg" class="cursor-pointer"
+                                    @click="handlePlusCount(item.id, item.weight, item.package)">
                             </div>
                         </div>
                         <div>

@@ -6,6 +6,7 @@ export const useUserStore = defineStore("user", {
     favoriteSum: 0,
     userName: "",
     showCar: false,
+    carId: "",
     carMaxSum: 0,
     carWeight: "",
   }),
