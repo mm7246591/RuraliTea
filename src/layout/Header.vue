@@ -1,22 +1,9 @@
 <script setup lang="ts">
 import firebaseConfig from "@/config/firebaseConfig";
-import {
-  getAuth,
-  signInWithPopup,
-  GoogleAuthProvider,
-  signOut,
-} from "firebase/auth";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { getDatabase, ref as dref, update, onValue } from "firebase/database";
 import { onMounted, ref, watchEffect } from "vue";
-import {
-  NModal,
-  NCard,
-  NBadge,
-  NDropdown,
-  NPopover,
-  NSpin,
-  useMessage,
-} from "naive-ui";
+import { NModal, NCard, NBadge, NDropdown, NPopover, NSpin, useMessage } from "naive-ui";
 import { useUserStore } from "@/stores/user";
 import { router } from "@/router";
 
@@ -69,6 +56,7 @@ const handleSignIn = async () => {
       });
       localStorage.setItem("user", JSON.stringify(item));
       getUser();
+      getFavoriteItem();
     })
     .catch((error) => {
       console.log(error);
@@ -100,11 +88,7 @@ const handleUpdateShow = (show: boolean) => {
   else userStore.showCar = false;
 };
 
-const handleMinusCount = async (
-  SelectId: string,
-  Weight: string,
-  Package: string
-) => {
+const handleMinusCount = async (SelectId: string, Weight: string, Package: string) => {
   if (favoriteItem.value) {
     await update(dref(db, `users/${userStore.userName}/`), {
       carId: SelectId,
@@ -113,11 +97,7 @@ const handleMinusCount = async (
       carWeight: Weight,
     });
     favoriteItem.value.forEach((item) => {
-      if (
-        item.id === SelectId &&
-        item.weight === Weight &&
-        item.package === Package
-      ) {
+      if (item.id === SelectId && item.weight === Weight && item.package === Package) {
         item.sum !== 1
           ? update(
               dref(
@@ -134,11 +114,7 @@ const handleMinusCount = async (
   }
 };
 
-const handlePlusCount = async (
-  SelectId: string,
-  Weight: string,
-  Package: string
-) => {
+const handlePlusCount = async (SelectId: string, Weight: string, Package: string) => {
   if (favoriteItem.value) {
     await update(dref(db, `users/${userStore.userName}/`), {
       carId: SelectId,
@@ -147,11 +123,7 @@ const handlePlusCount = async (
       carWeight: Weight,
     });
     favoriteItem.value.forEach((item) => {
-      if (
-        item.id === SelectId &&
-        item.weight === Weight &&
-        item.package === Package
-      ) {
+      if (item.id === SelectId && item.weight === Weight && item.package === Package) {
         item.sum < userStore.carMaxSum
           ? update(
               dref(
@@ -171,11 +143,7 @@ const handlePlusCount = async (
 const handleDelete = (SelectId: string, Weight: string, Package: string) => {
   if (favoriteItem.value) {
     favoriteItem.value?.forEach(async (item) => {
-      if (
-        item.id === SelectId &&
-        item.weight === Weight &&
-        item.package === Package
-      ) {
+      if (item.id === SelectId && item.weight === Weight && item.package === Package) {
         await update(
           dref(
             db,
@@ -232,6 +200,7 @@ const getFavoriteItem = () => {
       const data = Object.values(snapshot.val()) as FavoriteItem[];
       favoriteItem.value = data.filter((item) => item);
       userStore.favoriteSum = data.filter((item) => item).length;
+      console.log(data);
     } else {
       favoriteItem.value = [];
       userStore.favoriteSum = 0;
@@ -248,9 +217,7 @@ const getFavoriteItem = () => {
 };
 
 onMounted(() => {
-  getUser();
   getItem();
-  getFavoriteItem();
 });
 
 watchEffect(() => {
@@ -275,9 +242,7 @@ watchEffect(() => {
   <header
     class="lg:w-full lg:h-[13vh] flex justify-evenly items-center text-[#5C6E58] shadow-[0_4px_2px_0px_rgba(187,187,187,.25)]"
   >
-    <div
-      class="menu lg:w-1/2 flex justify-around items-center text-sm font-semibold"
-    >
+    <div class="menu lg:w-1/2 flex justify-around items-center text-sm font-semibold">
       <RouterLink :to="{ name: 'Home' }" class="logo">
         <img
           class="lg:w-[3.75rem] lg:h-[3.75rem] object-contain cursor-pointer"
@@ -294,9 +259,7 @@ watchEffect(() => {
         <RouterLink :to="{ name: 'Contact' }">聯絡我們</RouterLink>
       </div>
     </div>
-    <div
-      class="lg:w-auto flex justify-evenly items-center font-['Noto_Sans_TC']"
-    >
+    <div class="lg:w-auto flex justify-evenly items-center font-['Noto_Sans_TC']">
       <div class="relative">
         <input
           type="text"
@@ -341,18 +304,14 @@ watchEffect(() => {
                   <div class="text-base text-[#5C6E58]">
                     {{ item.name }}
                   </div>
-                  <div class="text-[#9E9E9E]">
-                    {{ item.weight }} / {{ item.package }}
-                  </div>
+                  <div class="text-[#9E9E9E]">{{ item.weight }} / {{ item.package }}</div>
                   <div class="w-fit flex justify-center items-center">
                     <div class="text-[#9E9E9E]">數量：</div>
                     <div class="flex">
                       <img
                         src="/img/header/minus.png"
                         class="cursor-pointer"
-                        @click="
-                          handleMinusCount(item.id, item.weight, item.package)
-                        "
+                        @click="handleMinusCount(item.id, item.weight, item.package)"
                       />
                       <NModal
                         v-model:show="showModal"
@@ -382,11 +341,7 @@ watchEffect(() => {
                                   type="button"
                                   class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
                                   @click="
-                                    handleDelete(
-                                      item.id,
-                                      item.weight,
-                                      item.package
-                                    )
+                                    handleDelete(item.id, item.weight, item.package)
                                   "
                                 >
                                   確定
@@ -400,9 +355,7 @@ watchEffect(() => {
                       <img
                         src="/img/header/plus.png"
                         class="cursor-pointer"
-                        @click="
-                          handlePlusCount(item.id, item.weight, item.package)
-                        "
+                        @click="handlePlusCount(item.id, item.weight, item.package)"
                       />
                     </div>
                   </div>
@@ -436,11 +389,7 @@ watchEffect(() => {
           alt=""
           @click="handleSignIn"
         />
-        <NDropdown
-          trigger="click"
-          :options="options"
-          @select="handleWebSignOut"
-        >
+        <NDropdown trigger="click" :options="options" @select="handleWebSignOut">
           <button class="mt-[1vh]">{{ userStore.userName }}</button>
         </NDropdown>
       </div>

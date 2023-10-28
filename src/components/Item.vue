@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watchEffect } from "vue";
-import {
-  NRadioGroup,
-  NRadioButton,
-  NModal,
-  NCard,
-  NIcon,
-  useMessage,
-} from "naive-ui";
+import { NRadioGroup, NRadioButton, NModal, NCard, NIcon, useMessage } from "naive-ui";
 import { CheckmarkSharp } from "@vicons/ionicons5";
 import { getDatabase, ref as dref, update, onValue } from "firebase/database";
 import { useUserStore } from "@/stores/user";
@@ -344,13 +337,13 @@ watchEffect(() => {
             <div class="flex justify-center items-end">
               <div class="flex">
                 <img
-                  src="/img/all-item/minus.jpg"
+                  src="/img/all-item/minus.png"
                   class="cursor-pointer"
                   @click="handleMinusCount"
                 />
                 <div class="lg:mx-[1vw] lg:my-auto text-lg">{{ count }}</div>
                 <img
-                  src="/img/all-item/plus.jpg"
+                  src="/img/all-item/plus.png"
                   class="cursor-pointer"
                   @click="handlePlusCount"
                 />
@@ -358,17 +351,13 @@ watchEffect(() => {
             </div>
           </div>
           <div class="flex justify-end lg:my-[1vh] lg:mx-[1vw]">
-            <div class="lg:my-auto text-sm text-[#757575]">
-              剩餘數量{{ maxSum }}
-            </div>
+            <div class="lg:my-auto text-sm text-[#757575]">剩餘數量{{ maxSum }}</div>
           </div>
           <div class="lg:w-full flex justify-end lg:mt-[1vh]">
             <button
               type="button"
               class="lg:px-[2vw] lg:py-[1vh] lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
-              :class="
-                isAlreadyMaxItem === selectWeight ? 'opacity-50' : 'opacity-100'
-              "
+              :class="isAlreadyMaxItem === selectWeight ? 'opacity-50' : 'opacity-100'"
               :disabled="isAlreadyMaxItem === selectWeight"
               @click="handleAddCar"
             >
@@ -380,12 +369,7 @@ watchEffect(() => {
               v-bind:close-on-esc="false"
               class="item"
             >
-              <NCard
-                style="width: 600px"
-                :bordered="false"
-                size="huge"
-                role="card"
-              >
+              <NCard style="width: 600px" :bordered="false" size="huge" role="card">
                 商品已加入購物車！
                 <template #footer>
                   <NIcon size="40">
@@ -462,9 +446,7 @@ watchEffect(() => {
 }
 
 .n-radio-group
-  .n-radio-button:not(.n-radio-button--disabled):hover:not(
-    .n-radio-button--checked
-  ) {
+  .n-radio-button:not(.n-radio-button--disabled):hover:not(.n-radio-button--checked) {
   color: #757575;
 }
 
