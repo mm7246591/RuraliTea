@@ -62,7 +62,7 @@ const handleAddCar = (SelectId: string) => {
 const getItem = () => {
   const teaRef = dref(db, `/teas`);
   onValue(teaRef, (snapshot) => {
-    if (snapshot.exists()) items.value = [...snapshot.val()];
+    if (snapshot.exists()) items.value = Object.values(snapshot.val()) as Item[];
   });
   selected.value = options[0].value;
 };
@@ -77,12 +77,8 @@ onMounted(() => {
     <div class="lg:w-[86vw] flex justify-end items-center mx-auto lg:my-[2vh]">
       <div>價位：</div>
       <div class="lg:w-[10vw]">
-        <NSelect
-          v-model:value="selected"
-          :options="options"
-          :default-value="options[0].value"
-          @update:value="handleFilterItem"
-        >
+        <NSelect v-model:value="selected" :options="options" :default-value="options[0].value"
+          @update:value="handleFilterItem">
           <template #arrow>
             <Triangle />
           </template>
@@ -91,11 +87,8 @@ onMounted(() => {
     </div>
     <div>
       <div class="lg:w-[90vw] flex flex-wrap mx-auto">
-        <div
-          v-for="item of filterItem"
-          :key="item.id"
-          class="relative lg:w-[28vw] flex flex-col items-center lg:mx-[1vw] lg:my-[5vh]"
-        >
+        <div v-for="item of filterItem" :key="item.id"
+          class="relative lg:w-[28vw] flex flex-col items-center lg:mx-[1vw] lg:my-[5vh]">
           <div>
             <img :src="item.img" class="object-contain" />
           </div>
@@ -103,20 +96,11 @@ onMounted(() => {
             {{ item.name }}
           </div>
           <div class="absolute bottom-[6vh] right-[2vw]">
-            <img
-              src="/img/all-item/card-add.png"
-              class="w-[48px] object-contain cursor-pointer"
-              @click="handleAddCar(item.id)"
-            />
+            <img src="/img/all-item/card-add.png" class="w-[48px] object-contain cursor-pointer"
+              @click="handleAddCar(item.id)" />
           </div>
         </div>
-        <NModal
-          v-model:show="showModal"
-          class="getItem"
-          preset="card"
-          size="large"
-          :block-scroll="true"
-        >
+        <NModal v-model:show="showModal" class="getItem" preset="card" size="large" :block-scroll="true">
           <NCard :bordered="false">
             <Item :id="selectId" :item="selectItem"></Item>
           </NCard>

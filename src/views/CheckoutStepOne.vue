@@ -4,12 +4,8 @@ import { getDatabase, ref as dref, update, onValue } from "firebase/database";
 import { onMounted, ref, watchEffect } from "vue";
 import { NSpin, NModal, NCard } from "naive-ui";
 import { useUserStore } from "@/stores/user";
+import { useRouter } from "vue-router";
 
-interface Step {
-  id: string;
-  step: number;
-  process: boolean;
-}
 interface FavoriteItem {
   id: string;
   img: string;
@@ -20,30 +16,34 @@ interface FavoriteItem {
   sum: number;
 }
 
+interface Step {
+  id: number;
+  text: string;
+  process: boolean
+}
+
+const router = useRouter();
+const favoriteItem = ref<FavoriteItem[] | null>(null);
+const showLoading = ref<boolean>(false);
+const showModal = ref<boolean>(false);
+const total = ref<number | any>(0);
 const steps = ref<Step[]>([
   {
-    id: "1",
-    step: 1,
+    id: 1,
     text: "訂單確認",
     process: true,
   },
   {
-    id: "2",
-    step: 2,
+    id: 2,
     text: "結帳",
     process: false,
   },
   {
-    id: "3",
-    step: 3,
+    id: 3,
     text: "完成訂購",
     process: false,
   },
 ]);
-const favoriteItem = ref<FavoriteItem[] | null>(null);
-const showLoading = ref<boolean>(false);
-const showModal = ref<boolean>(false);
-const total = ref<number>(0);
 
 firebaseConfig;
 const db = getDatabase();
@@ -61,14 +61,14 @@ const handleMinusCount = async (SelectId: string, Weight: string, Package: strin
       if (item.id === SelectId && item.weight === Weight && item.package === Package) {
         item.sum !== 1
           ? update(
-              dref(
-                db,
-                `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`
-              ),
-              {
-                sum: (item.sum -= 1),
-              }
-            )
+            dref(
+              db,
+              `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`
+            ),
+            {
+              sum: (item.sum -= 1),
+            }
+          )
           : item.sum;
       }
     });
@@ -87,14 +87,14 @@ const handlePlusCount = async (SelectId: string, Weight: string, Package: string
       if (item.id === SelectId && item.weight === Weight && item.package === Package) {
         item.sum < userStore.carMaxSum
           ? update(
-              dref(
-                db,
-                `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`
-              ),
-              {
-                sum: (item.sum += 1),
-              }
-            )
+            dref(
+              db,
+              `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`
+            ),
+            {
+              sum: (item.sum += 1),
+            }
+          )
           : item.sum;
       }
     });
@@ -128,13 +128,17 @@ const handleDelete = async (SelectId: string, Weight: string, Package: string) =
   }
 };
 
+const handleSubmit = () => {
+  router.push("/checkout/step2");
+};
+
 const getFavoriteItem = () => {
   const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
   onValue(favoriteRef, (snapshot) => {
     if (snapshot.exists()) {
       const data = Object.values(snapshot.val()) as FavoriteItem[];
-      total.value = data.reduce((acc, cur) => acc.price * acc.sum + cur.price * cur.sum);
       favoriteItem.value = data.filter((item) => item);
+      total.value = data.reduce((acc, cur) => acc.price * acc.sum + cur.price * cur.sum as any);
     }
   });
 };
@@ -156,24 +160,14 @@ watchEffect(() => {
 <template>
   <div class="flex flex-col justify-center items-center">
     <div class="lg:w-[60vw] lg:h-[20vh] flex justify-evenly items-center lg:mx-auto">
-      <div
-        v-for="step of steps"
-        :key="step.id"
-        :class="step.process ? 'bg-[#5C6E58]' : 'bg-[#BDBDBD]'"
-        class="relative test lg:w-[55px] lg:h-[55px] flex justify-center items-center rounded-full"
-      >
-        <div class="text-3xl text-[#F5F5F5]">{{ step.step }}</div>
-        <div
-          :class="step.process ? 'text-[#5C6E58]' : 'text-[#BDBDBD]'"
-          class="absolute w-[8vw] text-center -bottom-3 translate-y-full text-base"
-        >
+      <div v-for="step of steps" :key="step.id" :class="step.process ? 'bg-[#5C6E58]' : 'bg-[#BDBDBD]'"
+        class="relative test lg:w-[55px] lg:h-[55px] flex justify-center items-center rounded-full">
+        <div class="text-3xl text-[#F5F5F5]">{{ step.id }}</div>
+        <div :class="step.process ? 'text-[#5C6E58]' : 'text-[#BDBDBD]'"
+          class="absolute w-[8vw] text-center -bottom-3 translate-y-full text-base">
           {{ step.text }}
         </div>
-        <div
-          v-show="step.step !== 3"
-          :class="step.step >= 2 && step.process ? 'bg-[#9E9E9E]' : 'bg-[#E0E0E0]'"
-          class="absolute w-[13vw] h-[2px] left-full"
-        ></div>
+        <div v-show="step.id !== 3" class="absolute w-[13vw] h-[2px] left-full bg-[#E0E0E0]"></div>
       </div>
     </div>
     <NSpin :show="showLoading">
@@ -189,43 +183,24 @@ watchEffect(() => {
             <div class="lg:mx-[2vw]">小計</div>
           </div>
         </div>
-        <div
-          v-for="item of favoriteItem"
-          :key="item.id"
-          class="flex justify-between items-center text-lg lg:py-[2vh] text-[#616161] bg-[#FAFAFA] c"
-        >
+        <div v-for="item of favoriteItem" :key="item.id"
+          class="flex justify-between items-center text-lg lg:py-[2vh] text-[#616161] bg-[#FAFAFA] c">
           <div class="flex justify-center items-center">
             <div class="lg:mx-[2vw]">
-              <img
-                src="/img/all-item/delete.jpg"
-                class="cursor-pointer"
-                @click="showModal = true"
-              />
+              <img src="/img/all-item/delete.jpg" class="cursor-pointer" @click="showModal = true" />
               <NModal v-model:show="showModal" v-bind:close-on-esc="false" class="header">
-                <NCard
-                  style="width: 300px"
-                  title="是否刪除此品項？"
-                  size="medium"
-                  role="card"
-                  aria-modal="true"
-                >
+                <NCard style="width: 300px" title="是否刪除此品項？" size="medium" role="card" aria-modal="true">
                   <template #footer>
                     <div class="flex justify-evenly items-center">
                       <div>
-                        <button
-                          type="button"
-                          class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
-                          @click="showModal = false"
-                        >
+                        <button type="button" class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
+                          @click="showModal = false">
                           取消
                         </button>
                       </div>
                       <div>
-                        <button
-                          type="button"
-                          class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
-                          @click="handleDelete(item.id, item.weight, item.package)"
-                        >
+                        <button type="button" class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
+                          @click="handleDelete(item.id, item.weight, item.package)">
                           確定
                         </button>
                       </div>
@@ -248,17 +223,11 @@ watchEffect(() => {
           </div>
           <div>NT$ {{ item.price }}</div>
           <div class="flex lg:ml-[2vw]">
-            <img
-              src="/img/all-item/minus.png"
-              class="w-[35px] h-[35px] cursor-pointer"
-              @click="handleMinusCount(item.id, item.weight, item.package)"
-            />
+            <img src="/img/all-item/minus.png" class="w-[35px] h-[35px] cursor-pointer"
+              @click="handleMinusCount(item.id, item.weight, item.package)" />
             <div class="lg:mx-[1vw] lg:my-auto text-lg">{{ item.sum }}</div>
-            <img
-              src="/img/all-item/plus.png"
-              class="w-[35px] h-[35px] cursor-pointer"
-              @click="handlePlusCount(item.id, item.weight, item.package)"
-            />
+            <img src="/img/all-item/plus.png" class="w-[35px] h-[35px] cursor-pointer"
+              @click="handlePlusCount(item.id, item.weight, item.package)" />
           </div>
           <div class="lg:mx-[2vw]">NT$ {{ item.price * item.sum }}</div>
         </div>
@@ -268,10 +237,8 @@ watchEffect(() => {
       <div class="flex flex-col items-end">
         <div class="text-base text-[#616161]">合計　NT$ {{ total }}</div>
         <div class="lg:my-[1vh] text-sm text-[#9E9E9E]">※ 運費、折扣將在結帳時計算</div>
-        <button
-          class="lg:w-[250px] lg:py-[.8vh] text-[#616161] bg-[#F2D349] rounded-[0.3125rem]"
-          type="submit"
-        >
+        <button class="lg:w-[250px] lg:py-[.8vh] text-[#616161] bg-[#F2D349] rounded-[0.3125rem]" type="submit"
+          @click="handleSubmit">
           結帳
         </button>
       </div>

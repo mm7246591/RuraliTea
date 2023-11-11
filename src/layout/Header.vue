@@ -174,7 +174,7 @@ const handleClear = async () => {
 
 const handleToCheckout = () => {
   userStore.showCar = false;
-  router.push("/checkout");
+  router.push("/checkout/step1");
 };
 
 const getUser = () => {
@@ -200,7 +200,6 @@ const getFavoriteItem = () => {
       const data = Object.values(snapshot.val()) as FavoriteItem[];
       favoriteItem.value = data.filter((item) => item);
       userStore.favoriteSum = data.filter((item) => item).length;
-      console.log(data);
     } else {
       favoriteItem.value = [];
       userStore.favoriteSum = 0;
@@ -218,6 +217,8 @@ const getFavoriteItem = () => {
 
 onMounted(() => {
   getItem();
+  getUser();
+  getFavoriteItem();
 });
 
 watchEffect(() => {

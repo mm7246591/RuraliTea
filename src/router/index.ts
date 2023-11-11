@@ -58,12 +58,19 @@ const routes = [
     },
   },
   {
-    path: "/checkout",
-    name: "Checkout",
-    component: () => import("../views/CheckOut.vue"),
-    meta: {
-      name: "結帳付款",
-    },
+    path: "/checkout/step1",
+    name: "CheckoutStepOne",
+    component: () => import("../views/CheckoutStepOne.vue"),
+  },
+  {
+    path: "/checkout/step2",
+    name: "CheckoutStepTwo",
+    component: () => import("../views/CheckoutStepTwo.vue"),
+  },
+  {
+    path: "/checkout/step3",
+    name: "CheckoutStepThree",
+    component: () => import("../views/CheckoutStepThree.vue"),
   },
   {
     path: "/:path(.*)*",
