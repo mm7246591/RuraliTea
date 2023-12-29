@@ -21,7 +21,6 @@ interface Item {
 const db = getDatabase();
 const route = useRoute();
 const items = ref<Item[] | null>(null);
-const selectItem = ref<Item[] | null>(null);
 const selected = ref<string | null>(null);
 const selectId = ref<string | null>(null);
 const showModal = ref<boolean>(false);
@@ -54,7 +53,6 @@ const handleFilterItem = (value: string) => {
 const handleAddCar = (SelectId: string) => {
   if (items.value) {
     selectId.value = SelectId;
-    selectItem.value = items.value?.filter((item) => item.id === SelectId);
     showModal.value = true;
   }
 };
@@ -100,9 +98,10 @@ onMounted(() => {
               @click="handleAddCar(item.id)" />
           </div>
         </div>
-        <NModal v-model:show="showModal" class="getItem" preset="card" size="large" :block-scroll="true">
+        <NModal v-model:show="showModal" :block-scroll="true" v-bind:close-on-esc="false" class="getItem" preset="card"
+          size="large">
           <NCard :bordered="false">
-            <Item :id="selectId" :item="selectItem"></Item>
+            <Item :id="selectId"></Item>
           </NCard>
         </NModal>
       </div>

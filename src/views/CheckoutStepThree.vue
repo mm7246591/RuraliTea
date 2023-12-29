@@ -38,7 +38,7 @@ const steps = ref<Step[]>([
                     {{ step.text }}
                 </div>
                 <div v-show="step.id !== 3" :class="step.process === true ? 'bg-[#9E9E9E]' : 'bg-[#E0E0E0]'"
-                    class="absolute w-[13vw] h-[2px] left-full"></div>
+                    class="absolute w-[13vw] h-[3px] left-full"></div>
             </div>
         </div>
     </div>

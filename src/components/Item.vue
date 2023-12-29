@@ -6,7 +6,7 @@ import { getDatabase, ref as dref, update, onValue } from "firebase/database";
 import { useUserStore } from "@/stores/user";
 import { useRouter } from "vue-router";
 
-interface Item {
+interface SelectItem {
   id: string;
   img: string;
   name: string;
@@ -25,6 +25,7 @@ interface FavoriteItem {
   weight: string;
   package: string;
   sum: number;
+  availableSum: number
 }
 
 interface Weight {
@@ -34,7 +35,6 @@ interface Weight {
 
 interface Props {
   id: string | null;
-  item: Item[] | null;
 }
 
 const db = getDatabase();
@@ -42,15 +42,16 @@ const userStore = useUserStore();
 const router = useRouter();
 const props = defineProps<Props>();
 const message = useMessage();
-const item = ref<Item[] | null>(null);
+const selectItem = ref<SelectItem[] | null>(null);
 const favoriteItem = ref<FavoriteItem[] | null>(null);
 const scaleImg = ref<string>("");
-const isNotAvailableItem = ref<string>("");
-const isAlreadyMaxItem = ref<string>("");
+const notAvailableItem = ref<string>("");
+const alreadyMaxItem = ref<string>("");
 const selectWeight = ref<string | null>(null);
 const selectPackage = ref<string | null>(null);
 const count = ref<number>(1);
 const maxSum = ref<number>(1);
+const availableSum = ref<number>(1);
 const showModal = ref<boolean>(false);
 const isAlreadyHave = ref<boolean>(false);
 const isNotAvailable = ref<boolean>(false);
@@ -77,16 +78,16 @@ const handleMinusCount = () => {
 };
 
 const handlePlusCount = () => {
-  if (maxSum.value > count.value) {
+  if (availableSum.value > count.value) {
     count.value += 1;
   }
 };
 
 const handleAddCar = async () => {
-  if (localStorage.user && item.value) {
+  if (localStorage.user && selectItem.value) {
     if (selectWeight.value && selectPackage.value) {
       showModal.value = true;
-      const selectItem = item.value[0];
+      const selected = selectItem.value[0];
       const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
       onValue(
         favoriteRef,
@@ -103,10 +104,11 @@ const handleAddCar = async () => {
                 await update(
                   dref(
                     db,
-                    `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`
+                    `users/${userStore.userName}/favorites/${selected.name}_${selectWeight.value}_${selectPackage.value}`
                   ),
                   {
                     sum: (item.sum += count.value),
+                    availableSum: maxSum.value - item.sum
                   }
                 );
               }
@@ -121,16 +123,17 @@ const handleAddCar = async () => {
         await update(
           dref(
             db,
-            `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`
+            `users/${userStore.userName}/favorites/${selected.name}_${selectWeight.value}_${selectPackage.value}`
           ),
           {
-            id: selectItem.id,
-            img: selectItem.img,
-            name: selectItem.name,
-            price: selectItem.price,
+            id: selected.id,
+            img: selected.img,
+            name: selected.name,
+            price: selected.price,
             weight: selectWeight.value,
             package: selectPackage.value,
             sum: count.value,
+            availableSum: maxSum.value - count.value
           }
         );
       }
@@ -147,9 +150,9 @@ const handleAddCar = async () => {
 };
 
 const handleSubmit = async () => {
-  if (localStorage.user && item.value) {
+  if (localStorage.user && selectItem.value) {
     if (selectWeight.value && selectPackage.value) {
-      const selectItem = item.value[0];
+      const selected = selectItem.value[0];
       const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
       onValue(
         favoriteRef,
@@ -166,10 +169,11 @@ const handleSubmit = async () => {
                 await update(
                   dref(
                     db,
-                    `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`
+                    `users/${userStore.userName}/favorites/${selected.name}_${selectWeight.value}_${selectPackage.value}`
                   ),
                   {
-                    sum: (item.sum += count.value),
+                    sum: item.sum += count.value,
+                    availableSum: maxSum.value - item.sum
                   }
                 );
               }
@@ -184,16 +188,17 @@ const handleSubmit = async () => {
         await update(
           dref(
             db,
-            `users/${userStore.userName}/favorites/${selectItem.name}_${selectWeight.value}_${selectPackage.value}`
+            `users/${userStore.userName}/favorites/${selected.name}_${selectWeight.value}_${selectPackage.value}`
           ),
           {
-            id: selectItem.id,
-            img: selectItem.img,
-            name: selectItem.name,
-            price: selectItem.price,
+            id: selected.id,
+            img: selected.img,
+            name: selected.name,
+            price: selected.price,
             weight: selectWeight.value,
             package: selectPackage.value,
             sum: count.value,
+            availableSum: maxSum.value - count.value
           }
         );
       }
@@ -208,15 +213,19 @@ const handleSubmit = async () => {
 };
 
 const getItem = () => {
-  if (props.item) {
-    item.value = props.item;
-    scaleImg.value = props.item[0].pictures[0].img;
-    props.item.forEach((item) => {
-      item.items.forEach((element) => {
-        weight.value.push({ value: element.item, label: element.item });
-      });
-    });
-  }
+  const teaRef = dref(db, `/teas`);
+  onValue(teaRef, (snapshot) => {
+    if (snapshot.exists()) {
+      const data = Object.values(snapshot.val()) as SelectItem[]
+      selectItem.value = data.filter(item => item.id === props.id)
+      selectItem.value.forEach(item => {
+        scaleImg.value = item.pictures[0].img;
+        item.items.forEach(element => {
+          weight.value.push({ value: element.item, label: element.item });
+        })
+      })
+    }
+  });
 };
 
 const getFavoriteItem = () => {
@@ -225,6 +234,8 @@ const getFavoriteItem = () => {
     if (snapshot.exists()) {
       const data = Object.values(snapshot.val()) as FavoriteItem[];
       favoriteItem.value = data;
+    } else {
+      availableSum.value = maxSum.value
     }
   });
 };
@@ -235,11 +246,11 @@ onMounted(() => {
 });
 
 watchEffect(() => {
-  if (props.item) {
-    props.item.forEach((item) => {
+  if (selectItem.value) {
+    selectItem.value.forEach((item) => {
       item.items.forEach((element) => {
         if (element.maxSum === 0) {
-          isNotAvailableItem.value = element.item;
+          notAvailableItem.value = element.item;
           isNotAvailable.value = true;
         }
         if (element.item === selectWeight.value) {
@@ -248,21 +259,29 @@ watchEffect(() => {
         }
         if (favoriteItem.value) {
           favoriteItem.value.forEach((item) => {
+            if (item.id === props.id && item.weight === selectWeight.value) {
+              availableSum.value = item.availableSum
+            }
+            if (item.id === props.id && item.weight !== selectWeight.value) {
+              availableSum.value = maxSum.value
+            }
             if (
               item.id === props.id &&
               item.weight === selectWeight.value &&
               item.sum >= maxSum.value
             ) {
-              isAlreadyMaxItem.value = item.weight;
+              alreadyMaxItem.value = item.weight;
             }
             if (
               item.id === props.id &&
               item.weight === selectWeight.value &&
               item.sum < maxSum.value
             ) {
-              isAlreadyMaxItem.value = "";
+              alreadyMaxItem.value = "";
             }
           });
+        } else {
+          availableSum.value = maxSum.value
         }
       });
     });
@@ -272,38 +291,21 @@ watchEffect(() => {
 
 <template>
   <div class="lg:w-full lg:h-[80vh] flex justify-center items-center">
-    <div
-      v-for="item of props.item"
-      :key="item.id"
-      class="lg:h-full flex flex-col lg:mx-[5vw]"
-    >
+    <div v-for="item of selectItem" :key="item.id" class="lg:h-full flex flex-col lg:mx-[5vw]">
       <div class="lg:mx-auto">
         <img :src="scaleImg" class="w-[500px] object-contain" />
       </div>
       <div class="lg:w-[510px] flex lg:mx-auto">
-        <div
-          v-for="picture of item.pictures"
-          :key="picture.id"
-          class="lg:mx-[.25vw] lg:my-[1vh]"
-        >
-          <img
-            :src="picture.img"
-            :class="
-              scaleImg === picture.img
-                ? 'opacity-50 cursor-auto'
-                : 'opacity-100  cursor-pointer'
-            "
-            class="object-contain"
-            @click="handleScale(picture.img)"
-          />
+        <div v-for="picture of item.pictures" :key="picture.id" class="lg:mx-[.25vw] lg:my-[1vh]">
+          <img :src="picture.img" :class="
+            scaleImg === picture.img
+              ? 'opacity-50 cursor-auto'
+              : 'opacity-100  cursor-pointer'
+          " class="object-contain" @click="handleScale(picture.img)" />
         </div>
       </div>
     </div>
-    <div
-      v-for="item of props.item"
-      :key="item.id"
-      class="lg:w-[40vw] lg:h-full flex flex-col text-left lg:mx-[2.5vw]"
-    >
+    <div v-for="item of selectItem" :key="item.id" class="lg:w-[40vw] lg:h-full flex flex-col text-left lg:mx-[2.5vw]">
       <div class="text-2xl text-[#8F2E17]">{{ item.name }}</div>
       <div class="lg:py-[2vh] text-base text-[#757575]">{{ item.intro }}</div>
       <div class="border border-[#8AA899]"></div>
@@ -314,39 +316,21 @@ watchEffect(() => {
         <div class="group lg:h-[20vh] lg:mb-[2vh]">
           <div class="text-lg text-[#424242]">購買克數：</div>
           <NRadioGroup v-model:value="selectWeight" name="weight">
-            <NRadioButton
-              v-for="item of weight"
-              :key="item.value"
-              :value="item.value"
-              :label="item.label"
-              :disabled="isNotAvailableItem === item.label && isNotAvailable"
-            />
+            <NRadioButton v-for="item of weight" :key="item.value" :value="item.value" :label="item.label"
+              :disabled="notAvailableItem === item.label && isNotAvailable" />
           </NRadioGroup>
         </div>
         <div class="package">
           <div class="lg:mb-[2vh] text-lg text-[#424242]">包裝方式：</div>
           <div class="flex justify-between items-center">
             <NRadioGroup v-model:value="selectPackage" name="packages">
-              <NRadioButton
-                v-for="item of packages"
-                :key="item.value"
-                :value="item.value"
-                :label="item.label"
-              />
+              <NRadioButton v-for="item of packages" :key="item.value" :value="item.value" :label="item.label" />
             </NRadioGroup>
             <div class="flex justify-center items-end">
               <div class="flex">
-                <img
-                  src="/img/all-item/minus.png"
-                  class="cursor-pointer"
-                  @click="handleMinusCount"
-                />
+                <img src="/img/all-item/minus.png" class="cursor-pointer" @click="handleMinusCount" />
                 <div class="lg:mx-[1vw] lg:my-auto text-lg">{{ count }}</div>
-                <img
-                  src="/img/all-item/plus.png"
-                  class="cursor-pointer"
-                  @click="handlePlusCount"
-                />
+                <img src="/img/all-item/plus.png" class="cursor-pointer" @click="handlePlusCount" />
               </div>
             </div>
           </div>
@@ -354,21 +338,12 @@ watchEffect(() => {
             <div class="lg:my-auto text-sm text-[#757575]">剩餘數量{{ maxSum }}</div>
           </div>
           <div class="lg:w-full flex justify-end lg:mt-[1vh]">
-            <button
-              type="button"
-              class="lg:px-[2vw] lg:py-[1vh] lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
-              :class="isAlreadyMaxItem === selectWeight ? 'opacity-50' : 'opacity-100'"
-              :disabled="isAlreadyMaxItem === selectWeight"
-              @click="handleAddCar"
-            >
+            <button type="button" class="lg:px-[2vw] lg:py-[1vh] lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
+              :class="alreadyMaxItem === selectWeight ? 'opacity-50' : 'opacity-100'"
+              :disabled="alreadyMaxItem === selectWeight" @click="handleAddCar">
               加入購物車
             </button>
-            <NModal
-              v-model:show="showModal"
-              :mask-closable="false"
-              v-bind:close-on-esc="false"
-              class="item"
-            >
+            <NModal v-model:show="showModal" :mask-closable="false" v-bind:close-on-esc="false" class="item">
               <NCard style="width: 600px" :bordered="false" size="huge" role="card">
                 商品已加入購物車！
                 <template #footer>
@@ -378,11 +353,8 @@ watchEffect(() => {
                 </template>
               </NCard>
             </NModal>
-            <button
-              type="button"
-              class="lg:px-[2vw] lg:py-[1vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
-              @click="handleSubmit"
-            >
+            <button type="button" class="lg:px-[2vw] lg:py-[1vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
+              @click="handleSubmit">
               立即購買
             </button>
           </div>
@@ -445,8 +417,7 @@ watchEffect(() => {
   color: #f5f5f5;
 }
 
-.n-radio-group
-  .n-radio-button:not(.n-radio-button--disabled):hover:not(.n-radio-button--checked) {
+.n-radio-group .n-radio-button:not(.n-radio-button--disabled):hover:not(.n-radio-button--checked) {
   color: #757575;
 }
 

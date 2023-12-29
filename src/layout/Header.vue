@@ -26,6 +26,7 @@ interface FavoriteItem {
   weight: string;
   package: string;
   sum: number;
+  availableSum: number
 }
 
 firebaseConfig;
@@ -100,14 +101,14 @@ const handleMinusCount = async (SelectId: string, Weight: string, Package: strin
       if (item.id === SelectId && item.weight === Weight && item.package === Package) {
         item.sum !== 1
           ? update(
-              dref(
-                db,
-                `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`
-              ),
-              {
-                sum: (item.sum -= 1),
-              }
-            )
+            dref(
+              db,
+              `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`
+            ),
+            {
+              sum: (item.sum -= 1),
+            }
+          )
           : (showModal.value = true);
       }
     });
@@ -126,14 +127,14 @@ const handlePlusCount = async (SelectId: string, Weight: string, Package: string
       if (item.id === SelectId && item.weight === Weight && item.package === Package) {
         item.sum < userStore.carMaxSum
           ? update(
-              dref(
-                db,
-                `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`
-              ),
-              {
-                sum: (item.sum += 1),
-              }
-            )
+            dref(
+              db,
+              `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`
+            ),
+            {
+              sum: (item.sum += 1),
+            }
+          )
           : item.sum;
       }
     });
@@ -241,15 +242,10 @@ watchEffect(() => {
 
 <template>
   <header
-    class="lg:w-full lg:h-[13vh] flex justify-evenly items-center text-[#5C6E58] shadow-[0_4px_2px_0px_rgba(187,187,187,.25)]"
-  >
+    class="lg:w-full lg:h-[13vh] flex justify-evenly items-center text-[#5C6E58] shadow-[0_4px_2px_0px_rgba(187,187,187,.25)]">
     <div class="menu lg:w-1/2 flex justify-around items-center text-sm font-semibold">
       <RouterLink :to="{ name: 'Home' }" class="logo">
-        <img
-          class="lg:w-[3.75rem] lg:h-[3.75rem] object-contain cursor-pointer"
-          src="/img/header/logo.png"
-          alt=""
-        />
+        <img class="lg:w-[3.75rem] lg:h-[3.75rem] object-contain cursor-pointer" src="/img/header/logo.png" alt="" />
       </RouterLink>
       <div class="lg:w-full flex justify-evenly">
         <RouterLink :to="{ name: 'AllTea' }">所有商品</RouterLink>
@@ -262,42 +258,21 @@ watchEffect(() => {
     </div>
     <div class="lg:w-auto flex justify-evenly items-center font-['Noto_Sans_TC']">
       <div class="relative">
-        <input
-          type="text"
-          id="search"
-          name="search"
-          autocomplete="off"
-          maxlength="10"
-          class="lg:w-[20rem] lg:h-[2rem] border-1 border-[#E0E0E0] rounded-[2.9375rem] shadow-[1px_1px_3px_1px_rgba(0,0,0,.25)] px-[1vw]"
-        />
-        <img
-          src="/img/header/search.png"
-          class="w-[24px] h-[24px] absolute top-1/2 -translate-y-1/2 right-3 object-contain"
-          alt=""
-        />
+        <input type="text" id="search" name="search" autocomplete="off" maxlength="10"
+          class="lg:w-[20rem] lg:h-[2rem] border-1 border-[#E0E0E0] rounded-[2.9375rem] shadow-[1px_1px_3px_1px_rgba(0,0,0,.25)] px-[1vw]" />
+        <img src="/img/header/search.png"
+          class="w-[24px] h-[24px] absolute top-1/2 -translate-y-1/2 right-3 object-contain" alt="" />
       </div>
       <NBadge :value="userStore.favoriteSum" :max="999">
-        <NPopover
-          placement="bottom-end"
-          trigger="manual"
-          :show-arrow="false"
-          :show="userStore.showCar"
-          @update:show="handleUpdateShow"
-        >
+        <NPopover placement="bottom-end" trigger="manual" :show-arrow="false" :show="userStore.showCar"
+          @update:show="handleUpdateShow">
           <template #trigger>
-            <img
-              src="/img/header/car.png"
-              class="lg:mx-[1vw] object-contain cursor-pointer"
-              @click="userStore.showCar = !userStore.showCar"
-            />
+            <img src="/img/header/car.png" class="lg:mx-[1vw] object-contain cursor-pointer"
+              @click="userStore.showCar = !userStore.showCar" />
           </template>
           <NSpin :show="showLoading">
             <div v-if="userStore.favoriteSum" class="car">
-              <div
-                v-for="item of favoriteItem"
-                :key="item.id"
-                class="w-fit flex justify-center items-center"
-              >
+              <div v-for="item of favoriteItem" :key="item.id" class="w-fit flex justify-center items-center">
                 <div class="my-[1vh]">
                   <img :src="item.img" class="w-[5rem] h-[5rem]" alt="" />
                 </div>
@@ -309,42 +284,24 @@ watchEffect(() => {
                   <div class="w-fit flex justify-center items-center">
                     <div class="text-[#9E9E9E]">數量：</div>
                     <div class="flex">
-                      <img
-                        src="/img/header/minus.png"
-                        class="cursor-pointer"
-                        @click="handleMinusCount(item.id, item.weight, item.package)"
-                      />
-                      <NModal
-                        v-model:show="showModal"
-                        v-bind:close-on-esc="false"
-                        class="header"
-                      >
-                        <NCard
-                          style="width: 300px"
-                          title="是否刪除此品項？"
-                          size="medium"
-                          role="card"
-                          aria-modal="true"
-                        >
+                      <img src="/img/header/minus.png" class="cursor-pointer"
+                        @click="handleMinusCount(item.id, item.weight, item.package)" />
+                      <NModal v-model:show="showModal" v-bind:close-on-esc="false" class="header">
+                        <NCard style="width: 300px" title="是否刪除此品項？" size="medium" role="card" aria-modal="true">
                           <template #footer>
                             <div class="flex justify-evenly items-center">
                               <div>
-                                <button
-                                  type="button"
+                                <button type="button"
                                   class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
-                                  @click="showModal = false"
-                                >
+                                  @click="showModal = false">
                                   取消
                                 </button>
                               </div>
                               <div>
-                                <button
-                                  type="button"
-                                  class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
-                                  @click="
+                                <button type="button"
+                                  class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]" @click="
                                     handleDelete(item.id, item.weight, item.package)
-                                  "
-                                >
+                                  ">
                                   確定
                                 </button>
                               </div>
@@ -353,27 +310,19 @@ watchEffect(() => {
                         </NCard>
                       </NModal>
                       <div class="lg:mx-[.5vw] lg:my-auto">{{ item.sum }}</div>
-                      <img
-                        src="/img/header/plus.png"
-                        class="cursor-pointer"
-                        @click="handlePlusCount(item.id, item.weight, item.package)"
-                      />
+                      <img src="/img/header/plus.png" class="cursor-pointer"
+                        @click="handlePlusCount(item.id, item.weight, item.package)" />
                     </div>
                   </div>
                 </div>
               </div>
               <div class="flex justify-end lg:my-[1vh]">
-                <button
-                  class="lg:px-[1vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
-                  @click="handleClear"
-                >
+                <button class="lg:px-[1vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]" @click="handleClear">
                   全部清空
                 </button>
-                <button
-                  type="button"
+                <button type="button"
                   class="lg:px-[1vw] lg:py-[.5vh] lg:ml-[.5vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
-                  @click="handleToCheckout"
-                >
+                  @click="handleToCheckout">
                   訂單結帳
                 </button>
               </div>
@@ -383,13 +332,8 @@ watchEffect(() => {
         </NPopover>
       </NBadge>
       <div class="flex justify-center items-center text-lg">
-        <img
-          v-show="!userStore.userName"
-          src="/img/header/member.png"
-          class="object-contain cursor-pointer"
-          alt=""
-          @click="handleSignIn"
-        />
+        <img v-show="!userStore.userName" src="/img/header/member.png" class="object-contain cursor-pointer" alt=""
+          @click="handleSignIn" />
         <NDropdown trigger="click" :options="options" @select="handleWebSignOut">
           <button class="mt-[1vh]">{{ userStore.userName }}</button>
         </NDropdown>

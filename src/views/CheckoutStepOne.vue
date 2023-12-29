@@ -14,6 +14,7 @@ interface FavoriteItem {
   weight: string;
   package: string;
   sum: number;
+  availableSum: number
 }
 
 interface Step {
@@ -136,9 +137,8 @@ const getFavoriteItem = () => {
   const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
   onValue(favoriteRef, (snapshot) => {
     if (snapshot.exists()) {
-      const data = Object.values(snapshot.val()) as FavoriteItem[];
-      favoriteItem.value = data.filter((item) => item);
-      total.value = data.reduce((acc, cur) => acc.price * acc.sum + cur.price * cur.sum as any);
+      favoriteItem.value = Object.values(snapshot.val()).filter((item) => item) as FavoriteItem[];
+      total.value = favoriteItem.value.reduce((acc, cur) => acc.price * acc.sum + cur.price * cur.sum as any);
     }
   });
 };
@@ -167,7 +167,7 @@ watchEffect(() => {
           class="absolute w-[8vw] text-center -bottom-3 translate-y-full text-base">
           {{ step.text }}
         </div>
-        <div v-show="step.id !== 3" class="absolute w-[13vw] h-[2px] left-full bg-[#E0E0E0]"></div>
+        <div v-show="step.id !== 3" class="absolute w-[13vw] h-[3px] left-full bg-[#E0E0E0]"></div>
       </div>
     </div>
     <NSpin :show="showLoading">
