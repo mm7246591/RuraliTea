@@ -96,6 +96,7 @@ const handleAddCar = async () => {
             const data = Object.values(snapshot.val()) as FavoriteItem[];
             data.forEach(async (item) => {
               if (
+                item.id === props.id &&
                 item.weight === selectWeight.value &&
                 item.package === selectPackage.value &&
                 maxSum.value - count.value >= 0
@@ -161,6 +162,7 @@ const handleSubmit = async () => {
             const data = Object.values(snapshot.val()) as FavoriteItem[];
             data.forEach(async (item) => {
               if (
+                item.id === props.id &&
                 item.weight === selectWeight.value &&
                 item.package === selectPackage.value &&
                 maxSum.value - count.value >= 0
@@ -234,8 +236,6 @@ const getFavoriteItem = () => {
     if (snapshot.exists()) {
       const data = Object.values(snapshot.val()) as FavoriteItem[];
       favoriteItem.value = data;
-    } else {
-      availableSum.value = maxSum.value
     }
   });
 };
@@ -256,35 +256,31 @@ watchEffect(() => {
         if (element.item === selectWeight.value) {
           count.value = 1;
           maxSum.value = element.maxSum;
-        }
-        if (favoriteItem.value) {
-          favoriteItem.value.forEach((item) => {
-            if (item.id === props.id && item.weight === selectWeight.value) {
-              availableSum.value = item.availableSum
-            }
-            if (item.id === props.id && item.weight !== selectWeight.value) {
-              availableSum.value = maxSum.value
-            }
-            if (
-              item.id === props.id &&
-              item.weight === selectWeight.value &&
-              item.sum >= maxSum.value
-            ) {
-              alreadyMaxItem.value = item.weight;
-            }
-            if (
-              item.id === props.id &&
-              item.weight === selectWeight.value &&
-              item.sum < maxSum.value
-            ) {
-              alreadyMaxItem.value = "";
-            }
-          });
-        } else {
           availableSum.value = maxSum.value
+          alreadyMaxItem.value = "";
         }
       });
     });
+    if (favoriteItem.value) {
+      let test = 0;
+      favoriteItem.value.forEach((item) => {
+        if (item.id === props.id && item.weight === selectWeight.value) {
+          availableSum.value = item.availableSum
+          test = test + item.sum
+          if (test >= maxSum.value) alreadyMaxItem.value = item.weight;
+        }
+        // if (
+        //   item.id === props.id &&
+        //   item.weight === selectWeight.value
+        // ) {
+        //   // alreadyMaxItem.value = item.weight;
+        //   console.log(alreadyMaxItem.value)
+        // }
+
+      });
+    } else {
+      availableSum.value = maxSum.value
+    }
   }
 });
 </script>
