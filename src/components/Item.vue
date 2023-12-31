@@ -109,7 +109,7 @@ const handleAddCar = async () => {
                   ),
                   {
                     sum: (item.sum += count.value),
-                    availableSum: maxSum.value - item.sum
+                    availableSum: maxSum.value - count.value
                   }
                 );
               }
@@ -175,7 +175,7 @@ const handleSubmit = async () => {
                   ),
                   {
                     sum: item.sum += count.value,
-                    availableSum: maxSum.value - item.sum
+                    availableSum: maxSum.value - count.value
                   }
                 );
               }
@@ -205,7 +205,7 @@ const handleSubmit = async () => {
         );
       }
       isAlreadyHave.value = false;
-      router.push("/checkout");
+      router.push("/checkout/step1");
     } else {
       message.warning("請選擇商品");
     }
@@ -233,10 +233,7 @@ const getItem = () => {
 const getFavoriteItem = () => {
   const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
   onValue(favoriteRef, (snapshot) => {
-    if (snapshot.exists()) {
-      const data = Object.values(snapshot.val()) as FavoriteItem[];
-      favoriteItem.value = data;
-    }
+    if (snapshot.exists()) favoriteItem.value = Object.values(snapshot.val()) as FavoriteItem[];
   });
 };
 

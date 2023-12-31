@@ -27,7 +27,7 @@ const router = useRouter();
 const favoriteItem = ref<FavoriteItem[] | null>(null);
 const showLoading = ref<boolean>(false);
 const showModal = ref<boolean>(false);
-const total = ref<number | any>(0);
+const total = ref<number>(0);
 const steps = ref<Step[]>([
   {
     id: 1,
@@ -68,6 +68,7 @@ const handleMinusCount = async (SelectId: string, Weight: string, Package: strin
             ),
             {
               sum: (item.sum -= 1),
+              availableSum: item.availableSum += 1
             }
           )
           : item.sum;
@@ -94,6 +95,7 @@ const handlePlusCount = async (SelectId: string, Weight: string, Package: string
             ),
             {
               sum: (item.sum += 1),
+              availableSum: item.availableSum -= 1
             }
           )
           : item.sum;
@@ -120,6 +122,7 @@ const handleDelete = async (SelectId: string, Weight: string, Package: string) =
             package: null,
             weight: null,
             sum: null,
+            availableSum: null
           }
         ).then(async () => {
           showLoading.value = false;
@@ -137,8 +140,10 @@ const getFavoriteItem = () => {
   const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
   onValue(favoriteRef, (snapshot) => {
     if (snapshot.exists()) {
-      favoriteItem.value = Object.values(snapshot.val()).filter((item) => item) as FavoriteItem[];
-      total.value = favoriteItem.value.reduce((acc, cur) => acc.price * acc.sum + cur.price * cur.sum as any);
+      favoriteItem.value = Object.values(snapshot.val()) as FavoriteItem[];
+      total.value = favoriteItem.value.reduce((acc, cur) =>
+        acc + cur.price * cur.sum, 0
+      )
     }
   });
 };
@@ -153,6 +158,7 @@ watchEffect(() => {
   }
   if (userStore.favoriteSum === 0) {
     favoriteItem.value = null;
+    total.value = 0
   }
 });
 </script>
