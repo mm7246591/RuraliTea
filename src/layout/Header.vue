@@ -264,7 +264,7 @@ watchEffect(() => {
           class="w-[24px] h-[24px] absolute top-1/2 -translate-y-1/2 right-3 object-contain" alt="" />
       </div>
       <NBadge :value="userStore.favoriteSum" :max="999">
-        <NPopover placement="bottom-end" trigger="manual" :show-arrow="false" :show="userStore.showCar"
+        <NPopover placement="bottom-end" trigger="click" :show-arrow="false" :show="userStore.showCar"
           @update:show="handleUpdateShow">
           <template #trigger>
             <img src="/img/header/car.png" class="lg:mx-[1vw] object-contain cursor-pointer"
