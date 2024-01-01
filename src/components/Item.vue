@@ -222,7 +222,7 @@ const getItem = () => {
       selectItem.value = data.filter(item => item.id === props.id)
       selectItem.value.forEach(item => {
         scaleImg.value = item.pictures[0].img;
-        item.items.forEach(element => {
+        Object.values(item.items).forEach(element => {
           weight.value.push({ value: element.item, label: element.item });
         })
       })
@@ -245,7 +245,7 @@ onMounted(() => {
 watchEffect(() => {
   if (selectItem.value) {
     selectItem.value.forEach((item) => {
-      item.items.forEach((element) => {
+      Object.values(item.items).forEach((element) => {
         if (element.maxSum === 0) {
           notAvailableItem.value = element.item;
           isNotAvailable.value = true;
@@ -266,14 +266,6 @@ watchEffect(() => {
           test = test + item.sum
           if (test >= maxSum.value) alreadyMaxItem.value = item.weight;
         }
-        // if (
-        //   item.id === props.id &&
-        //   item.weight === selectWeight.value
-        // ) {
-        //   // alreadyMaxItem.value = item.weight;
-        //   console.log(alreadyMaxItem.value)
-        // }
-
       });
     } else {
       availableSum.value = maxSum.value

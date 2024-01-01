@@ -60,7 +60,8 @@ const handleAddCar = (SelectId: string) => {
 const getItem = () => {
   const teaRef = dref(db, `/teas`);
   onValue(teaRef, (snapshot) => {
-    if (snapshot.exists()) items.value = Object.values(snapshot.val()) as Item[];
+    if (snapshot.exists())
+      items.value = [...Object.values(snapshot.val()) as Item[]]
   });
   selected.value = options[0].value;
 };

@@ -2,7 +2,7 @@
 import firebaseConfig from "@/config/firebaseConfig";
 import { getDatabase, ref as dref, update, onValue } from "firebase/database";
 import { onMounted, ref, watchEffect } from "vue";
-import { NSpin, NModal, NCard } from "naive-ui";
+import { NModal, NCard } from "naive-ui";
 import { useUserStore } from "@/stores/user";
 import { useRouter } from "vue-router";
 
@@ -25,7 +25,6 @@ interface Step {
 
 const router = useRouter();
 const favoriteItem = ref<FavoriteItem[] | null>(null);
-const showLoading = ref<boolean>(false);
 const showModal = ref<boolean>(false);
 const total = ref<number>(0);
 const steps = ref<Step[]>([
@@ -105,7 +104,6 @@ const handlePlusCount = async (SelectId: string, Weight: string, Package: string
 };
 
 const handleDelete = async (SelectId: string, Weight: string, Package: string) => {
-  showLoading.value = true;
   if (favoriteItem.value) {
     favoriteItem.value?.forEach(async (item) => {
       if (item.id === SelectId && item.weight === Weight && item.package === Package) {
@@ -124,9 +122,7 @@ const handleDelete = async (SelectId: string, Weight: string, Package: string) =
             sum: null,
             availableSum: null
           }
-        ).then(async () => {
-          showLoading.value = false;
-        });
+        )
       }
     });
   }
@@ -176,69 +172,68 @@ watchEffect(() => {
         <div v-show="step.id !== 3" class="absolute w-[13vw] h-[3px] left-full bg-[#E0E0E0]"></div>
       </div>
     </div>
-    <NSpin :show="showLoading">
-      <div class="lg:w-[80vw] flex flex-col lg:pb-[4vh] border-b border-[#E0E0E0]">
-        <div class="lg:py-[2vh] flex items-center text-xl text-[#FAFAFA] bg-[#8AA899]">
-          <div class="mx-[2vw]">購物車商品 ({{ userStore.favoriteSum }} 件)</div>
-        </div>
-        <div class="lg:py-[1vh] flex items-center text-base text-[#616161] bg-[#FAFAFA]">
-          <div class="lg:w-full flex justify-between tracking-wider">
-            <div class="lg:mx-[6vw]">商品資料</div>
-            <div class="lg:w-[120px] text-end">價格</div>
-            <div class="lg:w-[8vw] text-center">購買數量</div>
-            <div class="lg:mx-[2vw]">小計</div>
-          </div>
-        </div>
-        <div v-for="item of favoriteItem" :key="item.id"
-          class="flex justify-between items-center text-lg lg:py-[2vh] text-[#616161] bg-[#FAFAFA] c">
-          <div class="flex justify-center items-center">
-            <div class="lg:mx-[2vw]">
-              <img src="/img/all-item/delete.jpg" class="cursor-pointer" @click="showModal = true" />
-              <NModal v-model:show="showModal" v-bind:close-on-esc="false" class="header">
-                <NCard style="width: 300px" title="是否刪除此品項？" size="medium" role="card" aria-modal="true">
-                  <template #footer>
-                    <div class="flex justify-evenly items-center">
-                      <div>
-                        <button type="button" class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
-                          @click="showModal = false">
-                          取消
-                        </button>
-                      </div>
-                      <div>
-                        <button type="button" class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
-                          @click="handleDelete(item.id, item.weight, item.package)">
-                          確定
-                        </button>
-                      </div>
-                    </div>
-                  </template>
-                </NCard>
-              </NModal>
-            </div>
-            <div>
-              <img :src="item.img" class="w-[5rem] h-[5rem]" />
-            </div>
-            <div class="lg:mx-[1vw]">
-              <div class="!text-base !text-[#5C6E58] lg:mb-[1vh]">
-                {{ item.name }}
-              </div>
-              <div class="!text-sm !text-[#9E9E9E]">
-                {{ item.weight }} / {{ item.package }}
-              </div>
-            </div>
-          </div>
-          <div>NT$ {{ item.price }}</div>
-          <div class="flex lg:ml-[2vw]">
-            <img src="/img/all-item/minus.png" class="w-[35px] h-[35px] cursor-pointer"
-              @click="handleMinusCount(item.id, item.weight, item.package)" />
-            <div class="lg:mx-[1vw] lg:my-auto text-lg">{{ item.sum }}</div>
-            <img src="/img/all-item/plus.png" class="w-[35px] h-[35px] cursor-pointer"
-              @click="handlePlusCount(item.id, item.weight, item.package)" />
-          </div>
-          <div class="lg:mx-[2vw]">NT$ {{ item.price * item.sum }}</div>
+    <div class="lg:w-[80vw] flex flex-col lg:pb-[4vh] border-b border-[#E0E0E0]">
+      <div class="lg:py-[2vh] flex items-center text-xl text-[#FAFAFA] bg-[#8AA899]">
+        <div class="mx-[2vw]">購物車商品 ({{ userStore.favoriteSum }} 件)</div>
+      </div>
+      <div class="lg:py-[1vh] flex items-center text-base text-[#616161] bg-[#FAFAFA]">
+        <div class="lg:w-full flex justify-between tracking-wider">
+          <div class="lg:mx-[6vw]">商品資料</div>
+          <div class="lg:w-[120px] text-end">價格</div>
+          <div class="lg:w-[8vw] text-center">購買數量</div>
+          <div class="lg:mx-[2vw]">小計</div>
         </div>
       </div>
-    </NSpin>
+      <div v-for="item of favoriteItem" :key="item.id"
+        class="flex justify-between items-center text-lg lg:py-[2vh] text-[#616161] bg-[#FAFAFA] c">
+        <div class="flex justify-center items-center">
+          <div class="lg:mx-[2vw]">
+            <img src="/img/all-item/delete.jpg" class="cursor-pointer"
+              @click="handleDelete(item.id, item.weight, item.package)" />
+            <NModal v-model:show="showModal" v-bind:close-on-esc="false" class="header">
+              <NCard style="width: 300px" title="是否刪除此品項？" size="medium" role="card" aria-modal="true">
+                <template #footer>
+                  <div class="flex justify-evenly items-center">
+                    <div>
+                      <button type="button" class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
+                        @click="showModal = false">
+                        取消
+                      </button>
+                    </div>
+                    <div>
+                      <button type="button" class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
+                        @click="showModal = false">
+                        確定
+                      </button>
+                    </div>
+                  </div>
+                </template>
+              </NCard>
+            </NModal>
+          </div>
+          <div>
+            <img :src="item.img" class="w-[5rem] h-[5rem]" />
+          </div>
+          <div class="lg:mx-[1vw]">
+            <div class="!text-base !text-[#5C6E58] lg:mb-[1vh]">
+              {{ item.name }}
+            </div>
+            <div class="!text-sm !text-[#9E9E9E]">
+              {{ item.weight }} / {{ item.package }}
+            </div>
+          </div>
+        </div>
+        <div>NT$ {{ item.price }}</div>
+        <div class="flex lg:ml-[2vw]">
+          <img src="/img/all-item/minus.png" class="w-[35px] h-[35px] cursor-pointer"
+            @click="handleMinusCount(item.id, item.weight, item.package)" />
+          <div class="lg:mx-[1vw] lg:my-auto text-lg">{{ item.sum }}</div>
+          <img src="/img/all-item/plus.png" class="w-[35px] h-[35px] cursor-pointer"
+            @click="handlePlusCount(item.id, item.weight, item.package)" />
+        </div>
+        <div class="lg:mx-[2vw]">NT$ {{ item.price * item.sum }}</div>
+      </div>
+    </div>
     <div class="lg:w-[78vw] lg:py-[4vh] flex justify-end">
       <div class="flex flex-col items-end">
         <div class="text-base text-[#616161]">合計　NT$ {{ total }}</div>

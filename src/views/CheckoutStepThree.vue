@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { useMessage } from 'naive-ui';
+import { onMounted, ref } from 'vue';
 
 interface Step {
     id: number;
     text: string;
     process: boolean
 }
-
+const message = useMessage()
 const steps = ref<Step[]>([
     {
         id: 1,
@@ -24,6 +25,10 @@ const steps = ref<Step[]>([
         process: true,
     },
 ]);
+
+onMounted(async () => {
+    message.success("已完成訂單！！！")
+})
 
 </script>
 

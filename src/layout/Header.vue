@@ -189,7 +189,7 @@ const getItem = () => {
   const teaRef = dref(db, `teas/`);
   onValue(teaRef, (snapshot) => {
     if (snapshot.exists()) {
-      items.value = [...snapshot.val()];
+      items.value = [...Object.values(snapshot.val()) as Item[]]
     }
   });
 };
@@ -226,7 +226,7 @@ watchEffect(() => {
   if (items.value) {
     items.value.forEach((item) => {
       if (item.id === userStore.carId) {
-        item.items.forEach(async (element) => {
+        Object.values(item.items).forEach(async (element) => {
           if (element.item === userStore.carWeight) {
             await update(dref(db, `users/${userStore.userName}/`), {
               carMaxSum: element.maxSum,

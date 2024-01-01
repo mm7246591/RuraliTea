@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import firebaseConfig from "@/config/firebaseConfig";
 import { useUserStore } from "@/stores/user";
-import { getDatabase, ref as dref, onValue } from "firebase/database";
+import { getDatabase, ref as dref, onValue, update } from "firebase/database";
 import { useMessage } from 'naive-ui';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -11,6 +11,24 @@ interface Step {
     text: string;
     process: boolean
 }
+
+interface Item {
+    id: string;
+    img: string;
+    name: string;
+    category: string;
+    intro: string;
+    price: number;
+    items: { item: string; maxSum: number }[];
+    pictures: { id: string; img: string }[];
+}
+
+interface SelectedItem {
+    name: string;
+    weight: string;
+    availableSum: number
+}
+
 interface FavoriteItem {
     id: string;
     img: string;
@@ -33,6 +51,7 @@ const phone = ref<number | null>(null)
 const mail = ref<string | null>(null)
 const total = ref<number | any>(0);
 const fare = ref<number>(60);
+const lastNameRef = ref<HTMLInputElement | null>(null)
 
 const steps = ref<Step[]>([
     {
@@ -51,8 +70,9 @@ const steps = ref<Step[]>([
         process: false,
     },
 ]);
-
-const handleSubmit = () => {
+const items = ref<Item[] | null>(null);
+const selectedItem = ref<SelectedItem[]>([])
+const handleSubmit = async () => {
     const nameRule = /^[\u4E00-\u9FA5]+$/
     const phoneRule = /^09[0-9]{8}$/
     const mailRule = /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/
@@ -68,22 +88,61 @@ const handleSubmit = () => {
         message.info("信箱格式不對")
     }
     else {
+        if (items.value) {
+            selectedItem.value.forEach((item) => {
+                console.log(item)
+                update(
+                    dref(
+                        db,
+                        `/teas/${item.name}/items/${item.weight}`
+                    ),
+                    {
+                        maxSum: item.availableSum
+                    }
+                )
+            })
+        }
+        await update(dref(db, `users/${userStore.userName}/`), {
+            carId: null,
+            carMaxSum: null,
+            carWeight: null,
+        });
+        await update(dref(db, `users/${userStore.userName}/`), {
+            favorites: null
+        }
+        );
         router.push('/checkout/step3')
     }
 }
+
+const getItem = () => {
+    const teaRef = dref(db, `/teas`);
+    onValue(teaRef, (snapshot) => {
+        if (snapshot.exists()) {
+            items.value = Object.values(snapshot.val()) as Item[]
+        }
+    });
+};
 
 const getFavoriteItem = () => {
     const favoriteRef = dref(db, `users/${userStore.userName}/favorites`);
     onValue(favoriteRef, (snapshot) => {
         if (snapshot.exists()) {
-            const data = Object.values(snapshot.val()).filter((item) => item) as FavoriteItem[];
-            total.value = data.reduce((acc, cur) => acc.price * acc.sum + cur.price * cur.sum as any);
+            const data = Object.values(snapshot.val()) as FavoriteItem[];
+            data.forEach(item => {
+                selectedItem.value.push({ name: item.name, weight: item.weight, availableSum: item.availableSum })
+            })
+            total.value = data.reduce((acc, cur) =>
+                acc + cur.price * cur.sum, 0
+            )
         }
     });
 };
 
-onMounted(() => {
-    getFavoriteItem()
+onMounted(async () => {
+    await getItem()
+    await getFavoriteItem()
+    lastNameRef.value && lastNameRef.value.focus()
 })
 </script>
 
@@ -106,7 +165,7 @@ onMounted(() => {
                 <div class="bg-[#8AA899] text-[#FAFAFA] lg:py-[2vh] lg:px-[2vw] text-lg">聯絡資訊</div>
                 <div class="bg-[#FAFAFA] lg:pb-[4vh] lg:px-[2vw]">
                     <div class="flex justify-evenly lg:mx-[1vw] lg:my-[2vh]">
-                        <input v-model.trim="lastName" type="text" placeholder="姓氏"
+                        <input v-model.trim="lastName" type="text" placeholder="姓氏" ref="lastNameRef"
                             class="lg:w-full lg:px-[1vw] lg:mr-[.5vw] lg:h-[5vh] rounded-md  bg-[#FFFFFF] border-2 border-[#8AA899]">
                         <input v-model.trim="firstName" type="text" placeholder="名字"
                             class="lg:w-full lg:px-[1vw] lg:ml-[.5vw] lg:h-[5vh] rounded-md  bg-[#FFFFFF] border-2 border-[#8AA899]">
