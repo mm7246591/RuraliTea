@@ -1,3 +1,3 @@
 # RuraliTea
 
-****https://rurali-tea.web.app/
+* https://rurali-tea.web.app/
