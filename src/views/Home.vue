@@ -33,15 +33,15 @@ const data = [
             <div>丘山茗坊</div>
             <div class="lg:mt-[1vh]">聯絡資訊</div>
             <div class="lg:my-[1vh]">E-mail：ruralitea@gmail.com</div>
-            <div class="w-[8vw] flex justify-evenly">
+            <div class="lg:w-[8vw] flex justify-evenly">
                 <div class="">
                     <a href="https://www.facebook.com/RuraliTea">
-                        <img src="/img/all-item/fb.png" alt="">
+                        <img src="/img/all-item/fb.png" class="w-[32px]" alt="">
                     </a>
                 </div>
                 <div>
                     <a href="https://www.instagram.com/ruralitea/?hl=zh-tw">
-                        <img src="/img/all-item/ig.png" alt="">
+                        <img src="/img/all-item/ig.png" class="w-[32px]" alt="">
                     </a>
                 </div>
             </div>

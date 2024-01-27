@@ -53,7 +53,7 @@ const handleSignIn = async () => {
       update(dref(db, `users/${result.user.displayName}`), {
         uid: result.user.uid,
         displayName: result.user.displayName,
-        email: result.user.email,
+        mail: result.user.email,
       });
       localStorage.setItem("user", JSON.stringify(item));
       getUser();
@@ -72,7 +72,7 @@ const handleWebSignOut = async () => {
         await update(dref(db, `users/${userStore.userName}`), {
           uid: null,
           name: null,
-          email: null,
+          mail: null,
         });
         localStorage.removeItem("user");
         userStore.userName = "";
@@ -103,10 +103,11 @@ const handleMinusCount = async (SelectId: string, Weight: string, Package: strin
           ? update(
             dref(
               db,
-              `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`
+              `users/${userStore.userName}/favorites/${item.name}_${item.weight}_${item.package}`
             ),
             {
               sum: (item.sum -= 1),
+              availableSum: item.availableSum += 1
             }
           )
           : (showModal.value = true);
@@ -129,10 +130,11 @@ const handlePlusCount = async (SelectId: string, Weight: string, Package: string
           ? update(
             dref(
               db,
-              `users/${userStore.userName}/favorites/${item.name}_${Weight}_${Package}`
+              `users/${userStore.userName}/favorites/${item.name}_${item.weight}_${item.package}`
             ),
             {
               sum: (item.sum += 1),
+              availableSum: item.availableSum -= 1
             }
           )
           : item.sum;
@@ -158,6 +160,7 @@ const handleDelete = (SelectId: string, Weight: string, Package: string) => {
             package: null,
             weight: null,
             sum: null,
+            availableSum: null
           }
         );
       }
@@ -253,7 +256,7 @@ watchEffect(() => {
         <RouterLink :to="{ name: 'SeasonLimited' }">季節限定</RouterLink>
         <RouterLink :to="{ name: 'MountainTea' }">高山茶</RouterLink>
         <RouterLink :to="{ name: 'BlackTea' }">紅茶</RouterLink>
-        <RouterLink :to="{ name: 'Contact' }">聯絡我們</RouterLink>
+        <RouterLink :to="{ name: 'About' }">聯絡我們</RouterLink>
       </div>
     </div>
     <div class="lg:w-auto flex justify-evenly items-center font-['Noto_Sans_TC']">
@@ -272,20 +275,20 @@ watchEffect(() => {
           </template>
           <NSpin :show="showLoading">
             <div v-if="userStore.favoriteSum" class="car">
-              <div v-for="item of favoriteItem" :key="item.id" class="w-fit flex justify-center items-center">
+              <div v-for="data of favoriteItem" :key="data.id" class="w-fit flex justify-center items-center">
                 <div class="my-[1vh]">
-                  <img :src="item.img" class="w-[5rem] h-[5rem]" alt="" />
+                  <img :src="data.img" class="w-[5rem] h-[5rem]" alt="" />
                 </div>
                 <div class="mx-[1vw]">
                   <div class="text-base text-[#5C6E58]">
-                    {{ item.name }}
+                    {{ data.name }}
                   </div>
-                  <div class="text-[#9E9E9E]">{{ item.weight }} / {{ item.package }}</div>
+                  <div class="text-[#9E9E9E]">{{ data.weight }} / {{ data.package }}</div>
                   <div class="w-fit flex justify-center items-center">
                     <div class="text-[#9E9E9E]">數量：</div>
                     <div class="flex">
                       <img src="/img/header/minus.png" class="cursor-pointer"
-                        @click="handleMinusCount(item.id, item.weight, item.package)" />
+                        @click="handleMinusCount(data.id, data.weight, data.package)" />
                       <NModal v-model:show="showModal" v-bind:close-on-esc="false" class="header">
                         <NCard style="width: 300px" title="是否刪除此品項？" size="medium" role="card" aria-modal="true">
                           <template #footer>
@@ -300,7 +303,7 @@ watchEffect(() => {
                               <div>
                                 <button type="button"
                                   class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]" @click="
-                                    handleDelete(item.id, item.weight, item.package)
+                                    handleDelete(data.id, data.weight, data.package)
                                   ">
                                   確定
                                 </button>
@@ -309,9 +312,9 @@ watchEffect(() => {
                           </template>
                         </NCard>
                       </NModal>
-                      <div class="lg:mx-[.5vw] lg:my-auto">{{ item.sum }}</div>
+                      <div class="lg:mx-[.5vw] lg:my-auto">{{ data.sum }}</div>
                       <img src="/img/header/plus.png" class="cursor-pointer"
-                        @click="handlePlusCount(item.id, item.weight, item.package)" />
+                        @click="handlePlusCount(data.id, data.weight, data.package)" />
                     </div>
                   </div>
                 </div>

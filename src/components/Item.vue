@@ -31,6 +31,7 @@ interface FavoriteItem {
 interface Weight {
   value: string;
   label: string;
+  maxSum: number
 }
 
 interface Props {
@@ -45,7 +46,6 @@ const message = useMessage();
 const selectItem = ref<SelectItem[] | null>(null);
 const favoriteItem = ref<FavoriteItem[] | null>(null);
 const scaleImg = ref<string>("");
-const notAvailableItem = ref<string>("");
 const alreadyMaxItem = ref<string>("");
 const selectWeight = ref<string | null>(null);
 const selectPackage = ref<string | null>(null);
@@ -54,7 +54,6 @@ const maxSum = ref<number>(1);
 const availableSum = ref<number>(1);
 const showModal = ref<boolean>(false);
 const isAlreadyHave = ref<boolean>(false);
-const isNotAvailable = ref<boolean>(false);
 
 const weight = ref<Weight[]>([]);
 
@@ -99,7 +98,7 @@ const handleAddCar = async () => {
                 item.id === props.id &&
                 item.weight === selectWeight.value &&
                 item.package === selectPackage.value &&
-                maxSum.value - count.value >= 0
+                maxSum.value - count.value > 0
               ) {
                 isAlreadyHave.value = true;
                 await update(
@@ -109,7 +108,29 @@ const handleAddCar = async () => {
                   ),
                   {
                     sum: (item.sum += count.value),
-                    availableSum: maxSum.value - count.value
+                    availableSum: item.availableSum -= count.value
+                  }
+                );
+              }
+              else if (item.id === props.id &&
+                item.weight === selectWeight.value &&
+                item.package !== selectPackage.value &&
+                maxSum.value - count.value > 0) {
+                isAlreadyHave.value = true;
+                await update(
+                  dref(
+                    db,
+                    `users/${userStore.userName}/favorites/${selected.name}_${selectWeight.value}_${selectPackage.value}`
+                  ),
+                  {
+                    id: selected.id,
+                    img: selected.img,
+                    name: selected.name,
+                    price: selected.price,
+                    weight: selectWeight.value,
+                    package: selectPackage.value,
+                    sum: count.value,
+                    availableSum: item.availableSum -= count.value
                   }
                 );
               }
@@ -136,7 +157,7 @@ const handleAddCar = async () => {
             sum: count.value,
             availableSum: maxSum.value - count.value
           }
-        );
+        )
       }
       isAlreadyHave.value = false;
       setTimeout(() => {
@@ -165,7 +186,7 @@ const handleSubmit = async () => {
                 item.id === props.id &&
                 item.weight === selectWeight.value &&
                 item.package === selectPackage.value &&
-                maxSum.value - count.value >= 0
+                maxSum.value - count.value > 0
               ) {
                 isAlreadyHave.value = true;
                 await update(
@@ -175,7 +196,29 @@ const handleSubmit = async () => {
                   ),
                   {
                     sum: item.sum += count.value,
-                    availableSum: maxSum.value - count.value
+                    availableSum: item.availableSum -= count.value
+                  }
+                );
+              }
+              else if (item.id === props.id &&
+                item.weight === selectWeight.value &&
+                item.package !== selectPackage.value &&
+                maxSum.value - count.value > 0) {
+                isAlreadyHave.value = true;
+                await update(
+                  dref(
+                    db,
+                    `users/${userStore.userName}/favorites/${selected.name}_${selectWeight.value}_${selectPackage.value}`
+                  ),
+                  {
+                    id: selected.id,
+                    img: selected.img,
+                    name: selected.name,
+                    price: selected.price,
+                    weight: selectWeight.value,
+                    package: selectPackage.value,
+                    sum: count.value,
+                    availableSum: item.availableSum -= count.value
                   }
                 );
               }
@@ -223,7 +266,7 @@ const getItem = () => {
       selectItem.value.forEach(item => {
         scaleImg.value = item.pictures[0].img;
         Object.values(item.items).forEach(element => {
-          weight.value.push({ value: element.item, label: element.item });
+          weight.value.push({ value: element.item, label: element.item, maxSum: element.maxSum });
         })
       })
     }
@@ -246,10 +289,6 @@ watchEffect(() => {
   if (selectItem.value) {
     selectItem.value.forEach((item) => {
       Object.values(item.items).forEach((element) => {
-        if (element.maxSum === 0) {
-          notAvailableItem.value = element.item;
-          isNotAvailable.value = true;
-        }
         if (element.item === selectWeight.value) {
           count.value = 1;
           maxSum.value = element.maxSum;
@@ -259,12 +298,12 @@ watchEffect(() => {
       });
     });
     if (favoriteItem.value) {
-      let test = 0;
+      let sum = 0;
       favoriteItem.value.forEach((item) => {
         if (item.id === props.id && item.weight === selectWeight.value) {
           availableSum.value = item.availableSum
-          test = test + item.sum
-          if (test >= maxSum.value) alreadyMaxItem.value = item.weight;
+          sum = sum + item.sum
+          if (sum >= maxSum.value) alreadyMaxItem.value = item.weight;
         }
       });
     } else {
@@ -276,12 +315,12 @@ watchEffect(() => {
 
 <template>
   <div class="lg:w-full lg:h-[80vh] flex justify-center items-center">
-    <div v-for="item of selectItem" :key="item.id" class="lg:h-full flex flex-col lg:mx-[5vw]">
+    <div v-for="data of selectItem" :key="data.id" class="lg:h-full flex flex-col lg:mx-[5vw]">
       <div class="lg:mx-auto">
         <img :src="scaleImg" class="w-[500px] object-contain" />
       </div>
       <div class="lg:w-[510px] flex lg:mx-auto">
-        <div v-for="picture of item.pictures" :key="picture.id" class="lg:mx-[.25vw] lg:my-[1vh]">
+        <div v-for="picture of data.pictures" :key="picture.id" class="lg:mx-[.25vw] lg:my-[1vh]">
           <img :src="picture.img" :class="
             scaleImg === picture.img
               ? 'opacity-50 cursor-auto'
@@ -301,15 +340,15 @@ watchEffect(() => {
         <div class="group lg:h-[20vh] lg:mb-[2vh]">
           <div class="text-lg text-[#424242]">購買克數：</div>
           <NRadioGroup v-model:value="selectWeight" name="weight">
-            <NRadioButton v-for="item of weight" :key="item.value" :value="item.value" :label="item.label"
-              :disabled="notAvailableItem === item.label && isNotAvailable" />
+            <NRadioButton v-for="data of weight" :key="data.value" :value="data.value" :label="data.label"
+              :disabled="data.maxSum === 0" />
           </NRadioGroup>
         </div>
         <div class="package">
           <div class="lg:mb-[2vh] text-lg text-[#424242]">包裝方式：</div>
           <div class="flex justify-between items-center">
             <NRadioGroup v-model:value="selectPackage" name="packages">
-              <NRadioButton v-for="item of packages" :key="item.value" :value="item.value" :label="item.label" />
+              <NRadioButton v-for="data of packages" :key="data.value" :value="data.value" :label="data.label" />
             </NRadioGroup>
             <div class="flex justify-center items-end">
               <div class="flex">
@@ -324,8 +363,8 @@ watchEffect(() => {
           </div>
           <div class="lg:w-full flex justify-end lg:mt-[1vh]">
             <button type="button" class="lg:px-[2vw] lg:py-[1vh] lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
-              :class="alreadyMaxItem === selectWeight ? 'opacity-50' : 'opacity-100'"
-              :disabled="alreadyMaxItem === selectWeight" @click="handleAddCar">
+              :class="maxSum === 0 || alreadyMaxItem === selectWeight ? 'opacity-50' : 'opacity-100'"
+              :disabled="maxSum === 0 || alreadyMaxItem === selectWeight" @click="handleAddCar">
               加入購物車
             </button>
             <NModal v-model:show="showModal" :mask-closable="false" v-bind:close-on-esc="false" class="item">
@@ -339,7 +378,8 @@ watchEffect(() => {
               </NCard>
             </NModal>
             <button type="button" class="lg:px-[2vw] lg:py-[1vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
-              @click="handleSubmit">
+              :class="maxSum === 0 || alreadyMaxItem === selectWeight ? 'opacity-50' : 'opacity-100'"
+              :disabled="maxSum === 0 || alreadyMaxItem === selectWeight" @click="handleSubmit">
               立即購買
             </button>
           </div>

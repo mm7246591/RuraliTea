@@ -50,9 +50,9 @@ const routes = [
     },
   },
   {
-    path: "/contact",
-    name: "Contact",
-    component: () => import("../views/Contact.vue"),
+    path: "/about",
+    name: "About",
+    component: () => import("../views/About.vue"),
     meta: {
       name: "聯絡我們",
     },

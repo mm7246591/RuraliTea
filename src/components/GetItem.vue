@@ -61,7 +61,7 @@ const getItem = () => {
   const teaRef = dref(db, `/teas`);
   onValue(teaRef, (snapshot) => {
     if (snapshot.exists())
-      items.value = [...Object.values(snapshot.val()) as Item[]]
+      items.value = Object.values(snapshot.val()) as Item[]
   });
   selected.value = options[0].value;
 };
@@ -72,7 +72,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="lg:w-full">
+  <div class="lg:w-full" :class="route.meta.name !== '所有商品' ? 'lg:h-[100vh]' : 'lg:h-auto'">
     <div class="lg:w-[86vw] flex justify-end items-center mx-auto lg:my-[2vh]">
       <div>價位：</div>
       <div class="lg:w-[10vw]">
@@ -86,17 +86,17 @@ onMounted(() => {
     </div>
     <div>
       <div class="lg:w-[90vw] flex flex-wrap mx-auto">
-        <div v-for="item of filterItem" :key="item.id"
+        <div v-for="data of filterItem" :key="data.id"
           class="relative lg:w-[28vw] flex flex-col items-center lg:mx-[1vw] lg:my-[5vh]">
           <div>
-            <img :src="item.img" class="object-contain" />
+            <img :src="data.img" class="object-contain" />
           </div>
           <div class="text-base text-[#757575] lg:my-[1vh]">
-            {{ item.name }}
+            {{ data.name }}
           </div>
           <div class="absolute bottom-[6vh] right-[2vw]">
             <img src="/img/all-item/card-add.png" class="w-[48px] object-contain cursor-pointer"
-              @click="handleAddCar(item.id)" />
+              @click="handleAddCar(data.id)" />
           </div>
         </div>
         <NModal v-model:show="showModal" :block-scroll="true" v-bind:close-on-esc="false" class="getItem" preset="card"
