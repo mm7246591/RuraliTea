@@ -259,7 +259,7 @@ watchEffect(() => {
         <RouterLink :to="{ name: 'About' }">聯絡我們</RouterLink>
       </div>
     </div>
-    <div class="lg:w-auto flex justify-evenly items-center font-['Noto_Sans_TC']">
+    <div class="lg:w-auto flex justify-evenly items-center">
       <div class="relative">
         <input type="text" id="search" name="search" autocomplete="off" maxlength="10"
           class="lg:w-[20rem] lg:h-[2rem] border-1 border-[#E0E0E0] rounded-[2.9375rem] shadow-[1px_1px_3px_1px_rgba(0,0,0,.25)] px-[1vw]" />

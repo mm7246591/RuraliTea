@@ -122,7 +122,7 @@ onMounted(() => {
                     </div>
                     <div
                         class="flex justify-center items-center lg:h-full lg:mx-[2vw] lg:py-[2vh] border-t border-[#BDBDBD] text-center text-[#455A64]">
-                        商品於下單後約1~2天內寄出，請務必記得領取商品若要有其他問題可於IG或FB粉專私訊
+                        商品於下單後約1~2天內寄出，請務必記得領取商品<br />若要有其他問題可於IG或FB粉專私訊
                     </div>
                 </div>
             </div>
