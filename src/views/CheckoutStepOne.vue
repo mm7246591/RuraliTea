@@ -201,7 +201,7 @@ watchEffect(() => {
           <div class="mx-[2vw]">購物車商品 ({{ userStore.favoriteSum }} 件)</div>
         </div>
         <div class="flex justify-between items-center lg:py-[1vh] text-base text-[#616161] bg-[#FAFAFA] tracking-wider">
-          <div v-show="isEmpty === true" class="lg:w-full flex flex-col justify-center items-center">
+          <div v-show="isEmpty" class="lg:w-full flex flex-col justify-center items-center">
             <img src="/img/all-item/empty.png" alt="">
             <div class="text-base text-[#8F2E17]">購物車內沒有商品唷</div>
           </div>
