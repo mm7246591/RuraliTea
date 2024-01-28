@@ -96,11 +96,11 @@ export const router = createRouter({
   },
 });
 
-router.beforeEach(async (to, from, next) => {
+const handlePath = async (to, from, next) => {
   const userStore = useUserStore();
   if (to.meta.requiresAuth && !userStore.userName) {
     next("/");
-  } else if (to.path === '/checkout/step3') {
+  } else if (from.path !== '/checkout/step2' && to.path === '/checkout/step3') {
     next("/");
   } else if (from.path === '/checkout/step3') {
     await update(ref(db, `users/${userStore.userName}/`), {
@@ -110,6 +110,10 @@ router.beforeEach(async (to, from, next) => {
   } else {
     next();
   }
+}
+
+router.beforeEach((to, from, next) => {
+  handlePath(to, from, next)
 });
 
 export const setupRouter = (app: App) => {

@@ -338,7 +338,7 @@ watchEffect(() => {
         <img v-show="!userStore.userName" src="/img/header/member.png" class="object-contain cursor-pointer" alt=""
           @click="handleWebSignIn" />
         <NDropdown trigger="click" :options="options" @select="handleWebSignOut">
-          <button class="mt-[1vh]">{{ userStore.userName }}</button>
+          <button>{{ userStore.userName }}</button>
         </NDropdown>
       </div>
     </div>
