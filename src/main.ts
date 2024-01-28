@@ -12,7 +12,6 @@ const Bootstrap = async () => {
   const app = createApp(App);
   setupRouter(app);
   setupStore(app);
-  setupStore(app);
   app.mount("#app");
 };
 

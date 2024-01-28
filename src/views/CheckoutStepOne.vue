@@ -161,6 +161,7 @@ const getFavoriteItem = async () => {
         acc + cur.price * cur.sum, 0
       )
     } else {
+      showLoading.value = false
       isEmpty.value = true
     }
   });
@@ -204,8 +205,8 @@ watchEffect(() => {
             <img src="/img/all-item/empty.png" alt="">
             <div class="text-base text-[#8F2E17]">購物車內沒有商品唷</div>
           </div>
-          <div v-show="isEmpty" class="lg:mx-[6vw]">商品資料</div>
-          <div v-show="isEmpty" class="flex justify-around lg:w-[46vw]">
+          <div v-show="!isEmpty" class="lg:mx-[6vw]">商品資料</div>
+          <div v-show="!isEmpty" class="flex justify-around lg:w-[46vw]">
             <div class="">價格</div>
             <div class="lg:w-[13vw] text-end">購買數量</div>
             <div class="lg:w-[10vw] text-end">小計</div>

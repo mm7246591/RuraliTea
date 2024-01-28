@@ -46,7 +46,7 @@ const options = [
   },
 ];
 
-const handleSignIn = async () => {
+const handleWebSignIn = async () => {
   await signInWithPopup(auth, provider)
     .then(async (result) => {
       const item = { displayName: result.user.displayName };
@@ -336,7 +336,7 @@ watchEffect(() => {
       </NBadge>
       <div class="flex justify-center items-center text-lg">
         <img v-show="!userStore.userName" src="/img/header/member.png" class="object-contain cursor-pointer" alt=""
-          @click="handleSignIn" />
+          @click="handleWebSignIn" />
         <NDropdown trigger="click" :options="options" @select="handleWebSignOut">
           <button class="mt-[1vh]">{{ userStore.userName }}</button>
         </NDropdown>

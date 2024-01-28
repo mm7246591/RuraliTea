@@ -1,5 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
 import type { App } from "vue";
+import { useUserStore } from "@/stores/user";
+import firebaseConfig from "@/config/firebaseConfig";
+import { getDatabase, ref, update } from "firebase/database";
+firebaseConfig;
+const db = getDatabase();
 const routes = [
   {
     path: "/",
@@ -60,16 +65,19 @@ const routes = [
   {
     path: "/checkout/step1",
     name: "CheckoutStepOne",
+    meta: { requiresAuth: true },
     component: () => import("../views/CheckoutStepOne.vue"),
   },
   {
     path: "/checkout/step2",
     name: "CheckoutStepTwo",
+    meta: { requiresAuth: true },
     component: () => import("../views/CheckoutStepTwo.vue"),
   },
   {
     path: "/checkout/step3",
     name: "CheckoutStepThree",
+    meta: { requiresAuth: true },
     component: () => import("../views/CheckoutStepThree.vue"),
   },
   {
@@ -79,12 +87,29 @@ const routes = [
   },
 ];
 
+
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior() {
     return { left: 0, top: 0 };
   },
+});
+
+router.beforeEach(async (to, from, next) => {
+  const userStore = useUserStore();
+  if (to.meta.requiresAuth && !userStore.userName) {
+    next("/");
+  } else if (to.path === '/checkout/step3') {
+    next("/");
+  } else if (from.path === '/checkout/step3') {
+    await update(ref(db, `users/${userStore.userName}/`), {
+      info: null
+    });
+    next();
+  } else {
+    next();
+  }
 });
 
 export const setupRouter = (app: App) => {
