@@ -65,19 +65,19 @@ const routes = [
   {
     path: "/checkout/step1",
     name: "CheckoutStepOne",
-    meta: { requiresAuth: true },
+    meta: { name: "結帳", requiresAuth: true },
     component: () => import("../views/CheckoutStepOne.vue"),
   },
   {
     path: "/checkout/step2",
     name: "CheckoutStepTwo",
-    meta: { requiresAuth: true },
+    meta: { name: "結帳", requiresAuth: true },
     component: () => import("../views/CheckoutStepTwo.vue"),
   },
   {
     path: "/checkout/step3",
     name: "CheckoutStepThree",
-    meta: { requiresAuth: true },
+    meta: { name: "結帳", requiresAuth: true },
     component: () => import("../views/CheckoutStepThree.vue"),
   },
   {
@@ -98,15 +98,14 @@ export const router = createRouter({
 
 const handlePath = async (to, from, next) => {
   const userStore = useUserStore();
+  userStore.showCar = false
   if (to.meta.requiresAuth && !userStore.userName) {
-    next("/");
-  } else if (from.path !== '/checkout/step2' && to.path === '/checkout/step3') {
     next("/");
   } else if (from.path === '/checkout/step3') {
     await update(ref(db, `users/${userStore.userName}/`), {
       info: null
     });
-    next();
+    next()
   } else {
     next();
   }

@@ -7,19 +7,13 @@ module.exports = {
       colors: {}
     },
     screens: {
+      '3sm': { max: '320px' },
+      '2sm': { max: '380px' },
       sm: { max: '491px' },
-      // => @media (min-width: 640px) { ... }
-
       md: { max: '768px' },
-      // => @media (min-width: 768px) { ... }
       lg: { min: '1024px' },
-      // => @media (min-width: 1024px) { ... }
-
       xl: { min: '1280px' },
-      // => @media (min-width: 1280px) { ... }
-
       '2xl': { min: '1536px' }
-      // => @media (min-width: 1536px) { ... }
     }
   },
   plugins: []

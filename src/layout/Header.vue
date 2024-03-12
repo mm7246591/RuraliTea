@@ -5,7 +5,7 @@ import { getDatabase, ref as dref, update, onValue } from "firebase/database";
 import { onMounted, ref, watchEffect } from "vue";
 import { NModal, NCard, NBadge, NDropdown, NPopover, NSpin, useMessage } from "naive-ui";
 import { useUserStore } from "@/stores/user";
-import { router } from "@/router";
+import { useRoute, useRouter } from "vue-router";
 
 interface Item {
   id: string;
@@ -31,12 +31,37 @@ interface FavoriteItem {
 
 firebaseConfig;
 const db = getDatabase();
+const route = useRoute()
+const router = useRouter();
 const userStore = useUserStore();
 const provider = new GoogleAuthProvider();
 const auth = getAuth();
 const message = useMessage();
 const items = ref<Item[] | null>(null);
 const favoriteItem = ref<FavoriteItem[] | null>(null);
+const selectId = ref<string | null>(null)
+const selectWeight = ref<string | null>(null)
+const selectPackage = ref<string | null>(null)
+const navbar = [
+  {
+    title: "所有商品",
+    urlName: "AllTea",
+  }, {
+    title: "茶葉禮盒",
+    urlName: "GiftBox",
+  }, {
+    title: "季節限定",
+    urlName: "SeasonLimited",
+  }, {
+    title: "高山茶",
+    urlName: "MountainTea",
+  }, {
+    title: "紅茶",
+    urlName: "BlackTea",
+  }, {
+    title: "聯絡我們",
+    urlName: "About",
+  }]
 const showModal = ref<boolean>(false);
 const showLoading = ref<boolean>(false);
 const options = [
@@ -46,7 +71,7 @@ const options = [
   },
 ];
 
-const handleWebSignIn = async () => {
+const handleSignIn = async () => {
   await signInWithPopup(auth, provider)
     .then(async (result) => {
       const item = { displayName: result.user.displayName };
@@ -64,7 +89,7 @@ const handleWebSignIn = async () => {
     });
 };
 
-const handleWebSignOut = async () => {
+const handleSignOut = async () => {
   if (localStorage.user) {
     message.success("已成功登出！");
     signOut(auth)
@@ -85,8 +110,8 @@ const handleWebSignOut = async () => {
 };
 
 const handleUpdateShow = (show: boolean) => {
-  if (show) userStore.showCar = true;
-  else userStore.showCar = false;
+  if (show)
+    userStore.showCar = true;
 };
 
 const handleMinusCount = async (SelectId: string, Weight: string, Package: string) => {
@@ -97,20 +122,23 @@ const handleMinusCount = async (SelectId: string, Weight: string, Package: strin
     await update(dref(db, `users/${userStore.userName}/`), {
       carWeight: Weight,
     });
-    favoriteItem.value.forEach((item) => {
-      if (item.id === SelectId && item.weight === Weight && item.package === Package) {
-        item.sum !== 1
-          ? update(
-            dref(
-              db,
-              `users/${userStore.userName}/favorites/${item.name}_${item.weight}_${item.package}`
-            ),
-            {
-              sum: (item.sum -= 1),
-              availableSum: item.availableSum += 1
-            }
-          )
-          : (showModal.value = true);
+    selectId.value = SelectId
+    selectWeight.value = Weight
+    selectPackage.value = Package
+    favoriteItem.value.forEach(async (item) => {
+      if (item.id === SelectId && item.weight === Weight && item.package === Package && item.sum === 1) {
+        showModal.value = true
+      } else if (item.id === SelectId && item.weight === Weight && item.package === Package && item.sum > 1) {
+        await update(
+          dref(
+            db,
+            `users/${userStore.userName}/favorites/${item.name}_${item.weight}_${item.package}`
+          ),
+          {
+            sum: (item.sum -= 1),
+            availableSum: item.availableSum += 1
+          }
+        )
       }
     });
   }
@@ -125,28 +153,26 @@ const handlePlusCount = async (SelectId: string, Weight: string, Package: string
       carWeight: Weight,
     });
     favoriteItem.value.forEach((item) => {
-      if (item.id === SelectId && item.weight === Weight && item.package === Package) {
-        item.sum < userStore.carMaxSum
-          ? update(
-            dref(
-              db,
-              `users/${userStore.userName}/favorites/${item.name}_${item.weight}_${item.package}`
-            ),
-            {
-              sum: (item.sum += 1),
-              availableSum: item.availableSum -= 1
-            }
-          )
-          : item.sum;
+      if (item.id === SelectId && item.weight === Weight && item.package === Package && item.sum < userStore.carMaxSum) {
+        update(
+          dref(
+            db,
+            `users/${userStore.userName}/favorites/${item.name}_${item.weight}_${item.package}`
+          ),
+          {
+            sum: (item.sum += 1),
+            availableSum: item.availableSum -= 1
+          }
+        )
       }
     });
   }
 };
 
-const handleDelete = (SelectId: string, Weight: string, Package: string) => {
+const handleDelete = () => {
   if (favoriteItem.value) {
-    favoriteItem.value?.forEach(async (item) => {
-      if (item.id === SelectId && item.weight === Weight && item.package === Package) {
+    favoriteItem.value.forEach(async (item) => {
+      if (item.id === selectId.value && item.weight === selectWeight.value && item.package === selectPackage.value) {
         await update(
           dref(
             db,
@@ -162,11 +188,12 @@ const handleDelete = (SelectId: string, Weight: string, Package: string) => {
             sum: null,
             availableSum: null
           }
-        );
+        ).then(() => {
+          showModal.value = false;
+        });
       }
     });
   }
-  showModal.value = false;
 };
 
 const handleClear = async () => {
@@ -181,13 +208,6 @@ const handleToCheckout = () => {
   router.push("/checkout/step1");
 };
 
-const getUser = () => {
-  if (localStorage.user) {
-    const { displayName } = JSON.parse(localStorage.user);
-    userStore.userName = displayName;
-  }
-};
-
 const getItem = () => {
   const teaRef = dref(db, `teas/`);
   onValue(teaRef, (snapshot) => {
@@ -195,6 +215,13 @@ const getItem = () => {
       items.value = [...Object.values(snapshot.val()) as Item[]]
     }
   });
+};
+
+const getUser = () => {
+  if (localStorage.user) {
+    const { displayName } = JSON.parse(localStorage.user);
+    userStore.userName = displayName;
+  }
 };
 
 const getFavoriteItem = () => {
@@ -245,107 +272,124 @@ watchEffect(() => {
 
 <template>
   <header
-    class="lg:w-full lg:h-[13vh] flex justify-evenly items-center text-[#5C6E58] shadow-[0_4px_2px_0px_rgba(187,187,187,.25)]">
-    <div class="menu lg:w-1/2 flex justify-around items-center text-sm font-semibold">
-      <RouterLink :to="{ name: 'Home' }" class="logo">
-        <img class="lg:w-[3.75rem] lg:h-[3.75rem] object-contain cursor-pointer" src="/img/header/logo.png" alt="" />
+    class="w-full sm:w-[90vw] h-[13vh] sm:h-[8vh] flex justify-evenly sm:justify-between items-center sm:mx-auto text-[#5C6E58] lg:shadow-[0_4px_2px_0px_rgba(187,187,187,.25)]">
+    <div class="logo lg:hidden flex items-center">
+      <RouterLink :to="{ name: 'Home' }">
+        <img class="w-[32px] object-contain cursor-pointer" src="/img/header/logo.png" alt="" />
       </RouterLink>
-      <div class="lg:w-full flex justify-evenly">
-        <RouterLink :to="{ name: 'AllTea' }">所有商品</RouterLink>
-        <RouterLink :to="{ name: 'GiftBox' }">茶葉禮盒</RouterLink>
-        <RouterLink :to="{ name: 'SeasonLimited' }">季節限定</RouterLink>
-        <RouterLink :to="{ name: 'MountainTea' }">高山茶</RouterLink>
-        <RouterLink :to="{ name: 'BlackTea' }">紅茶</RouterLink>
-        <RouterLink :to="{ name: 'About' }">聯絡我們</RouterLink>
+      <div class="ml-[2vw] font-semibold tracking-[.2em]">關於山丘</div>
+    </div>
+    <div class="menu sm:hidden w-1/2 flex justify-around items-center text-sm font-semibold">
+      <RouterLink :to="{ name: 'Home' }" class="logo">
+        <img class="w-[56px] object-contain cursor-pointer" src="/img/header/logo.png" alt="" />
+      </RouterLink>
+      <div v-for="(data, index) of navbar" :key="data.urlName" class="flex justify-evenly" v-show="index > 0">
+        <RouterLink :to="{ name: data.urlName }">{{ data.title }}</RouterLink>
       </div>
     </div>
-    <div class="lg:w-auto flex justify-evenly items-center">
-      <div class="relative">
+    <div class="w-auto flex justify-evenly items-center">
+      <div class="relative sm:hidden">
         <input type="text" id="search" name="search" autocomplete="off" maxlength="10"
-          class="lg:w-[20rem] lg:h-[2rem] border-1 border-[#E0E0E0] rounded-[2.9375rem] shadow-[1px_1px_3px_1px_rgba(0,0,0,.25)] px-[1vw]" />
+          class="w-[20rem] h-[2rem] border-1 border-[#E0E0E0] rounded-[2.9375rem] shadow-[1px_1px_3px_1px_rgba(0,0,0,.25)] px-[1vw]" />
         <img src="/img/header/search.png"
           class="w-[24px] h-[24px] absolute top-1/2 -translate-y-1/2 right-3 object-contain" alt="" />
       </div>
-      <NBadge :value="userStore.favoriteSum" :max="999">
-        <NPopover placement="bottom-end" trigger="click" :show-arrow="false" :show="userStore.showCar"
-          @update:show="handleUpdateShow">
-          <template #trigger>
-            <img src="/img/header/car.png" class="lg:mx-[1vw] object-contain cursor-pointer"
-              @click="userStore.showCar = !userStore.showCar" />
-          </template>
-          <NSpin :show="showLoading">
-            <div v-if="userStore.favoriteSum" class="car">
-              <div v-for="data of favoriteItem" :key="data.id" class="w-fit flex justify-center items-center">
-                <div class="my-[1vh]">
-                  <img :src="data.img" class="w-[5rem] h-[5rem]" alt="" />
-                </div>
-                <div class="mx-[1vw]">
-                  <div class="text-base text-[#5C6E58]">
-                    {{ data.name }}
+      <div class="flex items-center">
+        <NBadge :value="userStore.favoriteSum" :max="999">
+          <NPopover placement="bottom-end" trigger="click" :show-arrow="false" :show="userStore.showCar"
+            @update:show="handleUpdateShow">
+            <template #trigger>
+              <img src="/img/header/car.png" class="mx-[1vw] sm:mx-[1.5vw] object-contain cursor-pointer"
+                @click="userStore.showCar = !userStore.showCar" />
+            </template>
+            <NSpin :show="showLoading">
+              <div v-if="userStore.favoriteSum" class="car">
+                <div v-for="data of favoriteItem" :key="data.id" class="w-fit flex justify-center items-center">
+                  <div class="my-[1vh]">
+                    <img :src="data.img" class="w-[5rem] h-[5rem]" alt="" />
                   </div>
-                  <div class="text-[#9E9E9E]">{{ data.weight }} / {{ data.package }}</div>
-                  <div class="w-fit flex justify-center items-center">
-                    <div class="text-[#9E9E9E]">數量：</div>
-                    <div class="flex">
-                      <img src="/img/header/minus.png" class="cursor-pointer"
-                        @click="handleMinusCount(data.id, data.weight, data.package)" />
-                      <NModal v-model:show="showModal" v-bind:close-on-esc="false" class="header">
-                        <NCard style="width: 300px" title="是否刪除此品項？" size="medium" role="card" aria-modal="true">
-                          <template #footer>
-                            <div class="flex justify-evenly items-center">
-                              <div>
-                                <button type="button"
-                                  class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
-                                  @click="showModal = false">
-                                  取消
-                                </button>
+                  <div class="mx-[1vw]">
+                    <div class="text-base text-[#5C6E58]">
+                      {{ data.name }}
+                    </div>
+                    <div class="text-[#9E9E9E]">{{ data.weight }} / {{ data.package }}</div>
+                    <div class="w-fit flex justify-center items-center">
+                      <div class="text-[#9E9E9E]">數量：</div>
+                      <div class="flex">
+                        <img src="/img/header/minus.png" class="cursor-pointer"
+                          @click="handleMinusCount(data.id, data.weight, data.package)" />
+                        <NModal v-model:show="showModal" v-bind:close-on-esc="false" class="header">
+                          <NCard style="width: 300px" title="是否刪除此品項？" size="medium" role="card" aria-modal="true">
+                            <template #footer>
+                              <div class="flex justify-evenly items-center">
+                                <div>
+                                  <button type="button"
+                                    class="px-[1.5vw] py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
+                                    @click="showModal = false">
+                                    取消
+                                  </button>
+                                </div>
+                                <div>
+                                  <button type="button"
+                                    class="px-[1.5vw] py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
+                                    @click="handleDelete">
+                                    確定
+                                  </button>
+                                </div>
                               </div>
-                              <div>
-                                <button type="button"
-                                  class="lg:px-[1.5vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]" @click="
-                                    handleDelete(data.id, data.weight, data.package)
-                                  ">
-                                  確定
-                                </button>
-                              </div>
-                            </div>
-                          </template>
-                        </NCard>
-                      </NModal>
-                      <div class="lg:mx-[.5vw] lg:my-auto">{{ data.sum }}</div>
-                      <img src="/img/header/plus.png" class="cursor-pointer"
-                        @click="handlePlusCount(data.id, data.weight, data.package)" />
+                            </template>
+                          </NCard>
+                        </NModal>
+                        <div class="mx-[.5vw] my-auto">{{ data.sum }}</div>
+                        <img src="/img/header/plus.png" class="cursor-pointer"
+                          @click="handlePlusCount(data.id, data.weight, data.package)" />
+                      </div>
                     </div>
                   </div>
                 </div>
+                <div class="flex justify-end my-[1vh]">
+                  <button class="px-[1vw] sm:px-[2vw] py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]"
+                    @click="handleClear">
+                    全部清空
+                  </button>
+                  <button type="button"
+                    class="px-[1vw] sm:px-[2vw] sm:mx-[2vw] py-[.5vh] mx-[.5vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
+                    @click="handleToCheckout">
+                    訂單結帳
+                  </button>
+                </div>
               </div>
-              <div class="flex justify-end lg:my-[1vh]">
-                <button class="lg:px-[1vw] lg:py-[.5vh] rounded-[5px] text-[#F5F5F5] bg-[#BDBDBD]" @click="handleClear">
-                  全部清空
-                </button>
-                <button type="button"
-                  class="lg:px-[1vw] lg:py-[.5vh] lg:ml-[.5vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
-                  @click="handleToCheckout">
-                  訂單結帳
-                </button>
-              </div>
-            </div>
-            <div v-else>尚無商品</div>
-          </NSpin>
-        </NPopover>
-      </NBadge>
-      <div class="flex justify-center items-center text-lg">
-        <img v-show="!userStore.userName" src="/img/header/member.png" class="object-contain cursor-pointer" alt=""
-          @click="handleWebSignIn" />
-        <NDropdown trigger="click" :options="options" @select="handleWebSignOut">
-          <button>{{ userStore.userName }}</button>
-        </NDropdown>
+              <div v-else>尚無商品</div>
+            </NSpin>
+          </NPopover>
+        </NBadge>
+        <div class="flex justify-center items-center text-lg">
+          <img v-show="!userStore.userName" src="/img/header/member.png" class="object-contain cursor-pointer" alt=""
+            @click="handleSignIn" />
+          <NDropdown trigger="click" :options="options" @select="handleSignOut">
+            <button>{{ userStore.userName }}</button>
+          </NDropdown>
+        </div>
       </div>
     </div>
   </header>
+  <div :class="route.meta.name === '結帳' ? 'hidden' : 'flex'" class="lg:hidden navbar my-[2vh]">
+    <div class="flex w-[100vw] overflow-x-scroll overflow-y-hidden">
+      <div v-for="data of navbar" :key="data.urlName">
+        <RouterLink :to="{ name: data.urlName }"
+          class="flex justify-center items-center w-[20vw] 2sm:w-[25vw] px-[1vw] py-[.5vh] mx-[1vw] text-center border border-[#5C6E58] font-semibold rounded-[33px] bg-[#F5F5F5] text-[#5C6E58]">
+          {{ data.title }}
+        </RouterLink>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style>
+.navbar ::-webkit-scrollbar {
+  display: none;
+}
+
 .menu a {
   padding: 20px 0px;
 }
@@ -360,8 +404,6 @@ watchEffect(() => {
 .n-popover {
   width: auto !important;
   height: auto !important;
-  padding: 2vh 1vw !important;
-  margin: 1vh 1vw !important;
   border-radius: 1.25rem 0rem 1.25rem 1.25rem !important;
   box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.25) !important;
 }
@@ -374,7 +416,7 @@ watchEffect(() => {
 }
 
 .n-modal-mask {
-  background-color: rgba(0, 0, 0, 0.3) !important;
+  background-color: rgba(0, 0, 0, 0.2) !important;
 }
 
 .n-spin-container {
@@ -382,7 +424,13 @@ watchEffect(() => {
   --n-text-color: #8aa899 !important;
 }
 
-.router-link-exact-active {
+.menu .router-link-exact-active {
   background: url("/img/header/triangle.png") no-repeat top center;
+}
+
+.navbar .router-link-exact-active {
+  color: #F5F5F5;
+  background-color: #5C6E58;
+  font-weight: normal;
 }
 </style>

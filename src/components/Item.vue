@@ -314,30 +314,30 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div class="lg:w-full lg:h-[80vh] flex justify-center items-center">
-    <div v-for="data of selectItem" :key="data.id" class="lg:h-full flex flex-col lg:mx-[5vw]">
-      <div class="lg:mx-auto">
-        <img :src="scaleImg" class="w-[500px] object-contain" />
+  <div class="w-full flex sm:flex-col justify-center items-center pb-[2vh]">
+    <div v-for="data of selectItem" :key="data.id" class="flex lg:flex-col lg:mx-[5vw] sm:justify-evenly">
+      <div class="sm:w-3/4">
+        <img :src="scaleImg" class="sm:h-full object-contain" />
       </div>
-      <div class="lg:w-[510px] flex lg:mx-auto">
-        <div v-for="picture of data.pictures" :key="picture.id" class="lg:mx-[.25vw] lg:my-[1vh]">
-          <img :src="picture.img" :class="
-            scaleImg === picture.img
-              ? 'opacity-50 cursor-auto'
-              : 'opacity-100  cursor-pointer'
-          " class="object-contain" @click="handleScale(picture.img)" />
+      <div class="w-[500px] sm:w-[9vw] flex sm:flex-col justify-between sm:justify-evenly">
+        <div v-for="picture of data.pictures" :key="picture.id" class="lg:mt-[.5vh]">
+          <img :src="picture.img" :class="scaleImg === picture.img
+      ? 'opacity-50 cursor-auto'
+      : 'opacity-100  cursor-pointer'
+      " class="w-[80px] object-contain" @click="handleScale(picture.img)" />
         </div>
       </div>
     </div>
-    <div v-for="item of selectItem" :key="item.id" class="lg:w-[40vw] lg:h-full flex flex-col text-left lg:mx-[2.5vw]">
-      <div class="text-2xl text-[#8F2E17]">{{ item.name }}</div>
-      <div class="lg:py-[2vh] text-base text-[#757575]">{{ item.intro }}</div>
+    <div v-for="item of selectItem" :key="item.id"
+      class="w-[40vw] sm:w-full h-full flex flex-col mx-[2.5vw] sm:px-[4vw] sm:mx-0">
+      <div class="text-2xl sm:my-[1vh] text-[#8F2E17] font-bold">{{ item.name }}</div>
+      <div class="my-[2vh] sm:my-[1vh] text-base text-[#757575]">{{ item.intro }}</div>
       <div class="border border-[#8AA899]"></div>
-      <div class="lg:my-[2vh] text-2xl text-[#D0310C] font-bold">
+      <div class="my-[2vh] sm:my-[1vh] text-2xl text-[#D0310C] font-bold">
         NT$ {{ item.price }}
       </div>
       <div>
-        <div class="group lg:h-[20vh] lg:mb-[2vh]">
+        <div class="group h-[20vh] sm:h-[18vh] 2sm:!h-[20vh] lg:mb-[2vh]">
           <div class="text-lg text-[#424242]">購買克數：</div>
           <NRadioGroup v-model:value="selectWeight" name="weight">
             <NRadioButton v-for="data of weight" :key="data.value" :value="data.value" :label="data.label"
@@ -345,7 +345,7 @@ watchEffect(() => {
           </NRadioGroup>
         </div>
         <div class="package">
-          <div class="lg:mb-[2vh] text-lg text-[#424242]">包裝方式：</div>
+          <div class="mb-[2vh] sm:mb-[1vh] text-lg text-[#424242]">包裝方式：</div>
           <div class="flex justify-between items-center">
             <NRadioGroup v-model:value="selectPackage" name="packages">
               <NRadioButton v-for="data of packages" :key="data.value" :value="data.value" :label="data.label" />
@@ -353,22 +353,23 @@ watchEffect(() => {
             <div class="flex justify-center items-end">
               <div class="flex">
                 <img src="/img/all-item/minus.png" class="cursor-pointer" @click="handleMinusCount" />
-                <div class="lg:mx-[1vw] lg:my-auto text-lg">{{ count }}</div>
+                <div class="mx-[1vw] my-auto text-lg">{{ count }}</div>
                 <img src="/img/all-item/plus.png" class="cursor-pointer" @click="handlePlusCount" />
               </div>
             </div>
           </div>
-          <div class="flex justify-end lg:my-[1vh] lg:mx-[1vw]">
-            <div class="lg:my-auto text-sm text-[#757575]">剩餘數量{{ maxSum }}</div>
+          <div class="flex justify-end my-[1vh] mx-[1vw]">
+            <div class="my-auto text-base text-[#757575]">剩餘數量{{ maxSum }}</div>
           </div>
-          <div class="lg:w-full flex justify-end lg:mt-[1vh]">
-            <button type="button" class="lg:px-[2vw] lg:py-[1vh] lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
+          <div class="w-full flex justify-end sm:justify-evenly mt-[1vh]">
+            <button type="button"
+              class="px-[2vw] sm:px-[5vw] py-[1vh] lg:mx-[1vw] rounded-[5px] text-[#F5F5F5] bg-[#5C6E58]"
               :class="maxSum === 0 || alreadyMaxItem === selectWeight ? 'opacity-50' : 'opacity-100'"
               :disabled="maxSum === 0 || alreadyMaxItem === selectWeight" @click="handleAddCar">
               加入購物車
             </button>
             <NModal v-model:show="showModal" :mask-closable="false" v-bind:close-on-esc="false" class="item">
-              <NCard style="width: 600px" :bordered="false" size="huge" role="card">
+              <NCard class="w-[600px] sm:w-[300px]" :bordered="false" size="huge" role="card">
                 商品已加入購物車！
                 <template #footer>
                   <NIcon size="40">
@@ -377,7 +378,7 @@ watchEffect(() => {
                 </template>
               </NCard>
             </NModal>
-            <button type="button" class="lg:px-[2vw] lg:py-[1vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
+            <button type="button" class="px-[2vw] sm:px-[5vw] py-[1vh] rounded-[5px] text-[#F5F5F5] bg-[#8F2E17]"
               :class="maxSum === 0 || alreadyMaxItem === selectWeight ? 'opacity-50' : 'opacity-100'"
               :disabled="maxSum === 0 || alreadyMaxItem === selectWeight" @click="handleSubmit">
               立即購買
@@ -449,5 +450,11 @@ watchEffect(() => {
 .item {
   text-align: center;
   --n-font-size: 20px !important;
+}
+
+@media screen and (max-width: 491px) {
+  .n-card>.n-card-header {
+    padding: 2vh 2vw !important;
+  }
 }
 </style>

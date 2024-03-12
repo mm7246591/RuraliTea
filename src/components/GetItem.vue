@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import Item from "./Item.vue";
-import { NModal, NCard, NSelect } from "naive-ui";
-import { Triangle } from "@vicons/ionicons5";
+import { NModal, NCard, NSpin } from "naive-ui";
 import { getDatabase, ref as dref, onValue } from "firebase/database";
-
 import { useRoute } from "vue-router";
 
 interface Item {
@@ -21,23 +19,9 @@ interface Item {
 const db = getDatabase();
 const route = useRoute();
 const items = ref<Item[] | null>(null);
-const selected = ref<string | null>(null);
 const selectId = ref<string | null>(null);
 const showModal = ref<boolean>(false);
-const options = [
-  {
-    label: "400~1500/一斤",
-    value: "400~1500/一斤",
-  },
-  {
-    label: "500~1600/一斤",
-    value: "500~1600/一斤",
-  },
-  {
-    label: "600~1700/一斤",
-    value: "600~1700/一斤",
-  },
-];
+const showLoading = ref<boolean>(false)
 
 const filterItem = computed(() => {
   if (items.value)
@@ -45,10 +29,6 @@ const filterItem = computed(() => {
       item.category.includes(route.meta.name as string)
     );
 });
-
-const handleFilterItem = (value: string) => {
-  console.log(value);
-};
 
 const handleAddCar = (SelectId: string) => {
   if (items.value) {
@@ -58,12 +38,14 @@ const handleAddCar = (SelectId: string) => {
 };
 
 const getItem = () => {
+  showLoading.value = true
   const teaRef = dref(db, `/teas`);
-  onValue(teaRef, (snapshot) => {
-    if (snapshot.exists())
-      items.value = Object.values(snapshot.val()) as Item[]
+  onValue(teaRef, async (snapshot) => {
+    if (snapshot.exists()) {
+      items.value = Object.values(await snapshot.val()) as Item[]
+      showLoading.value = false
+    }
   });
-  selected.value = options[0].value;
 };
 
 onMounted(() => {
@@ -72,42 +54,33 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="lg:w-full" :class="route.meta.name !== '所有商品' ? 'lg:h-[100vh]' : 'lg:h-auto'">
-    <div class="lg:w-[86vw] flex justify-end items-center mx-auto lg:my-[2vh]">
-      <div>價位：</div>
-      <div class="lg:w-[10vw]">
-        <NSelect v-model:value="selected" :options="options" :default-value="options[0].value"
-          @update:value="handleFilterItem">
-          <template #arrow>
-            <Triangle />
-          </template>
-        </NSelect>
-      </div>
-    </div>
-    <div>
-      <div class="lg:w-[90vw] flex flex-wrap mx-auto">
-        <div v-for="data of filterItem" :key="data.id"
-          class="relative lg:w-[28vw] flex flex-col items-center lg:mx-[1vw] lg:my-[5vh]">
-          <div>
-            <img :src="data.img" class="object-contain" />
+  <NSpin :show="showLoading" :stroke="'#778168'">
+    <div class="w-full" :class="route.meta.name !== '所有商品' ? 'h-[100vh]' : 'h-auto sm:h-[100vh]'">
+      <div>
+        <div class="w-[90vw] flex sm:justify-between flex-wrap mx-auto sm:my-[1vh]">
+          <div v-for="data of filterItem" :key="data.id"
+            class="relative w-[28vw] sm:w-[42vw] flex flex-col items-center mx-[.5vw] sm:mx-[1.2vw] my-[5vh] sm:my-[0vh]">
+            <div>
+              <img :src="data.img" class="object-contain" />
+            </div>
+            <div class="text-base 2sm:text-sm 3sm:!text-[12px] text-[#757575] my-[1vh]">
+              {{ data.name }}
+            </div>
+            <div class="absolute bottom-[6vh] right-[2vw]">
+              <img src="/img/all-item/card-add.png" class="w-[48px] sm:w-[40px] object-contain cursor-pointer"
+                @click="handleAddCar(data.id)" />
+            </div>
           </div>
-          <div class="text-base text-[#757575] lg:my-[1vh]">
-            {{ data.name }}
-          </div>
-          <div class="absolute bottom-[6vh] right-[2vw]">
-            <img src="/img/all-item/card-add.png" class="w-[48px] object-contain cursor-pointer"
-              @click="handleAddCar(data.id)" />
-          </div>
+          <NModal v-model:show="showModal" :block-scroll="true" v-bind:close-on-esc="false"
+            class="getItem w-[90vw] px-[2vw] sm:my-[10vh]" preset="card" size="large">
+            <NCard :bordered="false">
+              <Item :id="selectId"></Item>
+            </NCard>
+          </NModal>
         </div>
-        <NModal v-model:show="showModal" :block-scroll="true" v-bind:close-on-esc="false" class="getItem" preset="card"
-          size="large">
-          <NCard :bordered="false">
-            <Item :id="selectId"></Item>
-          </NCard>
-        </NModal>
       </div>
     </div>
-  </div>
+  </NSpin>
 </template>
 
 <style>
@@ -132,8 +105,6 @@ onMounted(() => {
 }
 
 .getItem {
-  width: 90vw;
-  padding: 0 2vw;
   --n-close-size: 25px !important;
   --n-close-icon-size: 25px !important;
 }
@@ -148,6 +119,6 @@ onMounted(() => {
 }
 
 .getItem .n-card__content {
-  padding: 0 !important;
+  padding: 0 2vw !important;
 }
 </style>
