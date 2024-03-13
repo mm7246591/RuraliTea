@@ -57,7 +57,7 @@ onMounted(() => {
   <NSpin :show="showLoading" :stroke="'#778168'">
     <div class="w-full" :class="route.meta.name !== '所有商品' ? 'h-[100vh]' : 'h-auto sm:h-[100vh]'">
       <div>
-        <div class="w-[90vw] flex sm:justify-between flex-wrap mx-auto sm:my-[1vh]">
+        <div class="w-[90vw] flex sm:justify-between flex-wrap mx-auto">
           <div v-for="data of filterItem" :key="data.id"
             class="relative w-[28vw] sm:w-[42vw] flex flex-col items-center mx-[.5vw] sm:mx-[1.2vw] my-[5vh] sm:my-[0vh]">
             <div>

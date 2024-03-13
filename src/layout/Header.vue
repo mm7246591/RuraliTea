@@ -277,7 +277,9 @@ watchEffect(() => {
       <RouterLink :to="{ name: 'Home' }">
         <img class="w-[32px] object-contain cursor-pointer" src="/img/header/logo.png" alt="" />
       </RouterLink>
-      <div class="ml-[2vw] font-semibold tracking-[.2em]">關於山丘</div>
+      <RouterLink :to="{ name: 'About' }">
+        <div class="ml-[2vw] font-semibold tracking-[.2em]">關於山丘</div>
+      </RouterLink>
     </div>
     <div class="menu sm:hidden w-1/2 flex justify-around items-center text-sm font-semibold">
       <RouterLink :to="{ name: 'Home' }" class="logo">
@@ -376,8 +378,8 @@ watchEffect(() => {
   <div :class="route.meta.name === '結帳' ? 'hidden' : 'flex'" class="lg:hidden navbar my-[2vh]">
     <div class="flex w-[100vw] overflow-x-scroll overflow-y-hidden">
       <div v-for="data of navbar" :key="data.urlName">
-        <RouterLink :to="{ name: data.urlName }"
-          class="flex justify-center items-center w-[20vw] 2sm:w-[25vw] px-[1vw] py-[.5vh] mx-[1vw] text-center border border-[#5C6E58] font-semibold rounded-[33px] bg-[#F5F5F5] text-[#5C6E58]">
+        <RouterLink :to="{ name: data.urlName }" :class="data.urlName === 'About' ? 'hidden' : 'flex'"
+          class="justify-center items-center w-[20vw] 2sm:w-[25vw] px-[1vw] py-[.5vh] mx-[1vw] text-center border border-[#5C6E58] font-semibold rounded-[33px] bg-[#F5F5F5] text-[#5C6E58]">
           {{ data.title }}
         </RouterLink>
       </div>
