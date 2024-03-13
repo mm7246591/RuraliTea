@@ -202,20 +202,20 @@ watchEffect(() => {
           <div class="mx-[2vw] sm:mx-[8vw]">購物車商品 ({{ userStore.favoriteSum }} 件)</div>
         </div>
         <div
-          class="sm:w-[200vw] flex justify-between items-center py-[1vh] text-base text-[#616161] bg-[#FAFAFA] tracking-wider ">
+          class="sm:w-[200vw] flex justify-between items-center py-[1vh] sm:px-[2vw] text-base text-[#616161] bg-[#FAFAFA] tracking-wider ">
           <div v-show="isEmpty" class="w-full flex flex-col justify-center items-center">
             <img src="/img/all-item/empty.png" class="sm:w-[100px]" alt="">
             <div class="text-base text-[#8F2E17]">購物車內沒有商品唷</div>
           </div>
           <div v-show="!isEmpty" class="w-[20vw] sm:w-[30vw] mx-[6vw] sm:text-center">商品資料</div>
           <div v-show="!isEmpty" class="w-[46vw] sm:w-[100vw] flex justify-around sm:justify-between sm:mx-[2vw]">
-            <div class="sm:w-[30vw] mx-[2vw]">價格</div>
-            <div class="w-[10vw] sm:w-[30vw] text-end sm:text-start">購買數量</div>
-            <div class="w-[10vw] sm:w-[30vw] text-end">小計</div>
+            <div class="sm:w-[auto] mx-[2vw] sm:mx-0">價格</div>
+            <div class="w-[10vw] sm:w-[30vw] lg:text-end ">購買數量</div>
+            <div class="w-[10vw] sm:w-auto lg:text-end">小計</div>
           </div>
         </div>
         <div v-for="data of favoriteItem" :key="data.id"
-          class="sm:w-[200vw] flex justify-between items-center text-lg pb-[2vh] text-[#616161] bg-[#FAFAFA] border-t border-0">
+          class="sm:w-[200vw] flex justify-between items-center text-lg text-[#616161] bg-[#FAFAFA] border-t border-0">
           <div class="flex sm:justify-center items-center">
             <div class="mx-[2vw]">
               <img src="/img/all-item/delete.jpg" class="sm:w-[16px] sm:mx-[2vw] cursor-pointer"
@@ -244,7 +244,7 @@ watchEffect(() => {
               </NModal>
             </div>
             <div>
-              <img :src="data.img" class="w-[100px] h-[100px]" />
+              <img :src="data.img" class="w-[100px] h-[100px] my-[2vh]" />
             </div>
             <div class="w-[15vw] sm:w-[30vw] mx-[1vw]">
               <div class="text-base text-[#5C6E58] mb-[1vh]">
@@ -259,11 +259,11 @@ watchEffect(() => {
           <div class="flex items-center ml-[2vw]">
             <img src="/img/all-item/minus.png" class="w-[35px] h-[35px] cursor-pointer"
               @click="handleMinusCount(data.id, data.weight, data.package)" />
-            <div class="mx-[1vw] text-lg">{{ data.sum }}</div>
+            <div class="mx-[1vw] sm:mx-[4vw] text-lg">{{ data.sum }}</div>
             <img src="/img/all-item/plus.png" class="w-[35px] h-[35px] cursor-pointer"
               @click="handlePlusCount(data.id, data.weight, data.package)" />
           </div>
-          <div class="mx-[2vw]">NT$ {{ data.price * data.sum }}</div>
+          <div class="mx-[2vw] sm:mx-[4vw]">NT$ {{ data.price * data.sum }}</div>
         </div>
       </div>
       <div class="w-[78vw] py-[4vh] flex justify-end">

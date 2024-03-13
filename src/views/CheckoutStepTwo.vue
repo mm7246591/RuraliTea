@@ -81,53 +81,53 @@ const steps = ref<Step[]>([
 const items = ref<Item[] | null>(null);
 const selectedItem = ref<SelectedItem[]>([])
 const handleSubmit = async () => {
-  // const ChineseRule = /^[\u4E00-\u9FA5]+$/
-  // const phoneRule = /^09[0-9]{8}$/
-  // const mailRule = /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/
-  // if (!firstName.value || !lastName.value || !phone.value || !mail.value || !getFirstName.value || !getLastName.value || !getPhone.value || !getMail.value || !getStore.value) {
-  //   message.info("尚有空格未輸入")
-  // }
-  // else if (!ChineseRule.test(firstName.value) || !ChineseRule.test(lastName.value) || !ChineseRule.test(getFirstName.value) || !ChineseRule.test(getLastName.value) || !ChineseRule.test(getStore.value)) {
-  //   message.info("只能輸入中文")
-  // }
-  // else if (!phoneRule.test(String(phone.value)) || !phoneRule.test(String(getPhone.value))) {
-  //   message.info("手機號碼格式不對")
-  // } else if (!mailRule.test(mail.value) || !mailRule.test(getMail.value)) {
-  //   message.info("信箱格式不對")
-  // }
-  // else {
-  //   const data = [{
-  //     infoName: `${getLastName.value}${getFirstName.value}`,
-  //     phone: getPhone.value,
-  //     mail: getMail.value,
-  //     store: `${getStore.value} 全家`,
-  //     total: total.value - fare.value
-  //   }, ...selectedItem.value]
-  //   await update(dref(db, `users/${userStore.userName}/`), {
-  //     info: data
-  //   });
-  //   selectedItem.value.forEach(async (item) => {
-  //     await update(
-  //       dref(
-  //         db,
-  //         `/teas/${item.name}/items/${item.weight}`
-  //       ),
-  //       {
-  //         maxSum: item.availableSum
-  //       }
-  //     )
-  //   })
-  //   await update(dref(db, `users/${userStore.userName}/`), {
-  //     carId: null,
-  //     carMaxSum: null,
-  //     carWeight: null,
-  //   });
-  //   await update(dref(db, `users/${userStore.userName}/`), {
-  //     favorites: null
-  //   }
-  //   );
-  //   router.push('/checkout/step3')
-  // }
+  const ChineseRule = /^[\u4E00-\u9FA5]+$/
+  const phoneRule = /^09[0-9]{8}$/
+  const mailRule = /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/
+  if (!firstName.value || !lastName.value || !phone.value || !mail.value || !getFirstName.value || !getLastName.value || !getPhone.value || !getMail.value || !getStore.value) {
+    message.info("尚有空格未輸入")
+  }
+  else if (!ChineseRule.test(firstName.value) || !ChineseRule.test(lastName.value) || !ChineseRule.test(getFirstName.value) || !ChineseRule.test(getLastName.value) || !ChineseRule.test(getStore.value)) {
+    message.info("只能輸入中文")
+  }
+  else if (!phoneRule.test(String(phone.value)) || !phoneRule.test(String(getPhone.value))) {
+    message.info("手機號碼格式不對")
+  } else if (!mailRule.test(mail.value) || !mailRule.test(getMail.value)) {
+    message.info("信箱格式不對")
+  }
+  else {
+    const data = [{
+      infoName: `${getLastName.value}${getFirstName.value}`,
+      phone: getPhone.value,
+      mail: getMail.value,
+      store: `${getStore.value} 全家`,
+      total: total.value - fare.value
+    }, ...selectedItem.value]
+    await update(dref(db, `users/${userStore.userName}/`), {
+      info: data
+    });
+    selectedItem.value.forEach(async (item) => {
+      await update(
+        dref(
+          db,
+          `/teas/${item.name}/items/${item.weight}`
+        ),
+        {
+          maxSum: item.availableSum
+        }
+      )
+    })
+    await update(dref(db, `users/${userStore.userName}/`), {
+      carId: null,
+      carMaxSum: null,
+      carWeight: null,
+    });
+    await update(dref(db, `users/${userStore.userName}/`), {
+      favorites: null
+    }
+    );
+    router.push('/checkout/step3')
+  }
   const data = [{
     infoName: `${getLastName.value}${getFirstName.value}`,
     phone: getPhone.value,

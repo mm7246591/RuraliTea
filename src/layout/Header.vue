@@ -273,7 +273,7 @@ watchEffect(() => {
 <template>
   <header
     class="w-full sm:w-[90vw] h-[13vh] sm:h-[8vh] flex justify-evenly sm:justify-between items-center sm:mx-auto text-[#5C6E58] lg:shadow-[0_4px_2px_0px_rgba(187,187,187,.25)]">
-    <div class="logo lg:hidden flex items-center">
+    <div class="logo hidden sm:flex items-center">
       <RouterLink :to="{ name: 'Home' }">
         <img class="w-[32px] object-contain cursor-pointer" src="/img/header/logo.png" alt="" />
       </RouterLink>

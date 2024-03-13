@@ -101,6 +101,8 @@ const handlePath = async (to, from, next) => {
   userStore.showCar = false
   if (to.meta.requiresAuth && !userStore.userName) {
     next("/");
+  } else if (!userStore.favoriteSum && to.path === '/checkout/step2' || !userStore.favoriteSum && to.path === '/checkout/step3') {
+    next("/")
   } else if (from.path === '/checkout/step3') {
     await update(ref(db, `users/${userStore.userName}/`), {
       info: null

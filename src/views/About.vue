@@ -97,6 +97,6 @@ watch(scrollTop, (newVal, oldVal) => {
 }
 
 .animate {
-    transition: all 0.5s ease;
+    transition: all .5s ease;
 }
 </style>

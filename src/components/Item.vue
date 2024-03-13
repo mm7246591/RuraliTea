@@ -317,7 +317,7 @@ watchEffect(() => {
   <div class="w-full flex sm:flex-col justify-center items-center pb-[2vh]">
     <div v-for="data of selectItem" :key="data.id" class="flex lg:flex-col lg:mx-[5vw] sm:justify-evenly">
       <div class="sm:w-3/4">
-        <img :src="scaleImg" class="sm:h-full object-contain" />
+        <img :src="scaleImg" class="object-contain" />
       </div>
       <div class="w-[500px] sm:w-[9vw] flex sm:flex-col justify-between sm:justify-evenly">
         <div v-for="picture of data.pictures" :key="picture.id" class="lg:mt-[.5vh]">
